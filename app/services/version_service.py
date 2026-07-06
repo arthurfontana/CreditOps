@@ -53,6 +53,7 @@ def update_draft(
     """Edita o conteúdo — só autor da versão (ou admin) e só em rascunho."""
     version = get_version(db, version_id)
     authz.ensure_role(actor, Role.AUTHOR, Role.ADMIN)
+    authz.ensure_area_scope(actor, version.policy.area_id, action="editar")
     if Role(actor.role) != Role.ADMIN and version.created_by != actor.id:
         raise PermissionDenied("apenas o autor da versão pode editá-la")
     if version.status != VersionStatus.DRAFT:
@@ -83,6 +84,7 @@ def update_submission_fields(
     """Justificativa e impacto esperado — editáveis apenas em rascunho."""
     version = get_version(db, version_id)
     authz.ensure_role(actor, Role.AUTHOR, Role.ADMIN)
+    authz.ensure_area_scope(actor, version.policy.area_id, action="editar")
     if Role(actor.role) != Role.ADMIN and version.created_by != actor.id:
         raise PermissionDenied("apenas o autor da versão pode editá-la")
     if version.status != VersionStatus.DRAFT:
@@ -122,6 +124,7 @@ def create_revision(db: Session, actor: User, policy_id: str) -> PolicyVersion:
     policy = db.get(Policy, policy_id)
     if policy is None:
         raise NotFound("política não encontrada")
+    authz.ensure_area_scope(actor, policy.area_id, action="criar revisões")
     existing = open_version(db, policy_id)
     if existing is not None:
         raise ValidationFailed(

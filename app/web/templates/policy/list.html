@@ -34,6 +34,7 @@
 {% include "policy/_table.html" %}
 
 {% if user.role in ('author', 'admin') %}
-<div class="actions"><a class="btn" href="/policies/new">Nova política</a></div>
+<div class="actions"><a class="btn" href="/policies/new">Nova política</a>
+  <a class="btn btn-secondary" href="/policies/import">Importar legado</a></div>
 {% endif %}
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Nova demanda — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/change-requests">Demandas</a> → Nova</div>
+<h1>Nova demanda de mudança</h1>
+
+<div class="card">
+  <form class="stack" method="post" action="/change-requests">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="title">Título</label>
+    <input type="text" id="title" name="title" required
+           placeholder="ex.: Rever score mínimo do cartão PF após deterioração do FPD60">
+    <label for="description_md">Motivação (Markdown)</label>
+    <textarea id="description_md" name="description_md"
+              placeholder="Contexto, dados que motivam a mudança, urgência…"></textarea>
+    <label for="area_id">Área</label>
+    <select id="area_id" name="area_id" required>
+      {% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
+    </select>
+    <label for="policy_id">Política afetada (vazio = política nova)</label>
+    <select id="policy_id" name="policy_id">
+      <option value="">— política nova —</option>
+      {% for p in policies %}
+      <option value="{{ p.id }}" {% if selected_policy_id == p.id %}selected{% endif %}>{{ p.code }} — {{ p.title }}</option>
+      {% endfor %}
+    </select>
+    <label for="priority">Prioridade</label>
+    <select id="priority" name="priority">
+      {% for value, label in priorities.items() %}
+      <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <div class="actions"><button type="submit">Registrar demanda</button></div>
+  </form>
+</div>
+{% endblock %}

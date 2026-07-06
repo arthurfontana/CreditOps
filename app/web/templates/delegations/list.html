@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Delegações — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Delegações de aprovação</h1>
+<p class="help">Aprovador ausente delega a um par por período determinado; decisões do delegado registram em nome de quem foram tomadas.</p>
+
+{% if user.role == 'approver' %}
+<div class="card">
+  <h2>Delegar minha aprovação</h2>
+  <form class="stack" method="post" action="/delegations">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="delegate_id">Delegar para (aprovador)</label>
+    <select id="delegate_id" name="delegate_id" required>
+      {% for a in approvers %}<option value="{{ a.id }}">{{ a.display_name }}</option>{% endfor %}
+    </select>
+    <div class="grid2">
+      <div><label for="starts_at">Início</label>
+        <input type="date" id="starts_at" name="starts_at" value="{{ today.isoformat() }}" required></div>
+      <div><label for="ends_at">Fim</label>
+        <input type="date" id="ends_at" name="ends_at" required></div>
+    </div>
+    <label for="reason">Motivo (opcional)</label>
+    <input type="text" id="reason" name="reason" placeholder="ex.: férias">
+    <div class="actions"><button type="submit">Delegar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Delegações</h2>
+  {% if delegations %}
+  <table>
+    <tr><th>Delegante</th><th>Delegado</th><th>Período</th><th>Motivo</th><th>Status</th><th></th></tr>
+    {% for d in delegations %}
+    <tr>
+      <td>{{ d.delegator.display_name if d.delegator }}</td>
+      <td>{{ d.delegate.display_name if d.delegate }}</td>
+      <td>{{ d.starts_at.strftime('%d/%m/%Y') }} — {{ d.ends_at.strftime('%d/%m/%Y') }}</td>
+      <td>{{ d.reason or '—' }}</td>
+      <td>
+        {% if d.revoked_at %}<span class="badge rejected">revogada</span>
+        {% elif d.ends_at < today %}<span class="badge superseded">encerrada</span>
+        {% elif d.starts_at > today %}<span class="badge draft">agendada</span>
+        {% else %}<span class="badge effective">ativa</span>{% endif %}
+      </td>
+      <td>
+        {% if not d.revoked_at and d.ends_at >= today and (d.delegator_id == user.id or user.role == 'admin') %}
+        <form class="inline" method="post" action="/delegations/{{ d.id }}/revoke">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn-sm btn-secondary">revogar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nenhuma delegação registrada.</p>{% endif %}
+</div>
+{% endblock %}

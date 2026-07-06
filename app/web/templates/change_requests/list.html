@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Demandas — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Demandas de mudança</h1>
+<p class="help">O pedido que antecede o rascunho — lead time é medido da demanda aberta à versão em vigor.</p>
+
+<div class="actions">
+  <a class="btn" href="/change-requests/new">Nova demanda</a>
+</div>
+
+<form class="filters" method="get" action="/change-requests">
+  <select name="status">
+    <option value="">Todos os status</option>
+    {% for value, label in cr_statuses.items() %}
+    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="area_id">
+    <option value="">Todas as áreas</option>
+    {% for a in areas %}
+    <option value="{{ a.id }}" {% if filters.area_id == a.id %}selected{% endif %}>{{ a.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority">
+    <option value="">Todas as prioridades</option>
+    {% for value, label in priorities.items() %}
+    <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-secondary">Filtrar</button>
+</form>
+
+<div class="card">
+  {% if change_requests %}
+  <table>
+    <tr><th>Código</th><th>Título</th><th>Prioridade</th><th>Status</th><th>Solicitante</th><th>Aberta em</th></tr>
+    {% for cr in change_requests %}
+    <tr>
+      <td><a href="/change-requests/{{ cr.id }}">{{ cr.code }}</a></td>
+      <td>{{ cr.title }}</td>
+      <td>{{ priorities[cr.priority] if cr.priority in priorities else cr.priority }}</td>
+      <td><span class="badge {{ 'effective' if cr.status == 'done' else 'draft' }}">{{ cr_statuses[cr.status] if cr.status in cr_statuses else cr.status }}</span></td>
+      <td>{{ cr.requester.display_name if cr.requester }}</td>
+      <td>{{ cr.created_at.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma demanda registrada.</p>
+  {% endif %}
+</div>
+{% endblock %}

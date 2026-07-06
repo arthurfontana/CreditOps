@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ release.name }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/releases">Releases</a> → {{ release.name }}</div>
+<h1>{{ release.name }}</h1>
+{% if release.description %}<p>{{ release.description }}</p>{% endif %}
+<p class="help">Criada por {{ release.creator.display_name if release.creator }}
+  em {{ release.created_at.strftime('%d/%m/%Y') if release.created_at }}
+  {% if release.published_at %} · última publicação em {{ release.published_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+</p>
+
+<div class="card">
+  <h2>Publicações desta release</h2>
+  {% if publications %}
+  <table>
+    <tr><th>Política</th><th>Versão</th><th>Publicada em</th><th>Vigente de</th></tr>
+    {% for p in publications %}
+    <tr>
+      <td><a href="/policies/{{ p.version.policy_id }}">{{ p.version.policy.code }} — {{ p.version.policy.title }}</a></td>
+      <td><a href="/versions/{{ p.version_id }}">v{{ p.version.version_number }}</a></td>
+      <td>{{ p.published_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ p.effective_from.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma publicação associada ainda — associe ao publicar uma versão aprovada.</p>
+  {% endif %}
+</div>
+{% endblock %}

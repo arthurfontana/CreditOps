@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Importar legado — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → Importar legado</div>
+<h1>Importador de legado</h1>
+<p class="help">Cada arquivo vira uma política com rascunho v1 e o documento original anexado (com hash).
+Arquivos .md/.txt entram como corpo; PDF/DOCX ficam anexados para reescrita assistida.</p>
+
+<div class="card">
+  <form class="stack" method="post" action="/policies/import" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="files">Documentos (múltiplos)</label>
+    <input type="file" id="files" name="files" multiple required>
+    <div class="grid2">
+      <div>
+        <label for="area_id">Área dona</label>
+        <select id="area_id" name="area_id" required>
+          {% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="policy_type">Tipo das políticas</label>
+        <select id="policy_type" name="policy_type">
+          {% for t in policy_types %}<option value="{{ t }}" {% if t == 'outro' %}selected{% endif %}>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="actions"><button type="submit">Importar lote</button></div>
+  </form>
+</div>
+
+{% if results %}
+<div class="card">
+  <h2>Resultado da importação</h2>
+  <table>
+    <tr><th>Arquivo</th><th>Resultado</th></tr>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.filename }}</td>
+      <td>
+        {% if r.ok %}
+        ✅ <a href="/policies/{{ r.policy_id }}">{{ r.policy_code }}</a> criada (rascunho v1)
+        {% else %}
+        ❌ {{ r.error }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

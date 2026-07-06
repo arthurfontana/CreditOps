@@ -47,14 +47,18 @@
     <a class="btn" href="/versions/{{ version.id }}/review">Analisar para decisão</a>
   {% endif %}
   {% if version.status == 'approved' and user.role == 'approver' %}
-    <form class="inline" method="post" action="/versions/{{ version.id }}/publish"
-          onsubmit="return confirm('Publicar v{{ version.version_number }}? A vigência começa na data escolhida.');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <label>Vigência a partir de <input type="date" name="effective_from" required></label>
-      <button type="submit">Publicar</button>
-    </form>
+    <a class="btn" href="/versions/{{ version.id }}/review">Publicar…</a>
   {% endif %}
 </div>
+{% endif %}
+
+{% if version.change_request %}
+<p class="help">Demanda de origem:
+  <a href="/change-requests/{{ version.change_request.id }}">{{ version.change_request.code }} — {{ version.change_request.title }}</a>
+</p>
+{% endif %}
+{% if publication and publication.release_id %}
+<p class="help">Release: <a href="/releases/{{ publication.release_id }}">ver pacote de publicação</a></p>
 {% endif %}
 
 {% if version.change_summary or version.expected_impact %}
@@ -78,10 +82,112 @@
 </div>
 {% endif %}
 
+{% if field_values %}
+<div class="card">
+  <h2>Campos estruturados</h2>
+  <table>
+    {% for f in field_defs %}
+    {% if f.name in field_values %}
+    <tr><td>{{ f.label }}</td><td><strong>{{ field_values[f.name] }}</strong></td></tr>
+    {% endif %}
+    {% endfor %}
+    {% for name, value in field_values.items() %}
+    {% if field_defs|selectattr('name', 'equalto', name)|list|length == 0 %}
+    <tr><td>{{ name }}</td><td><strong>{{ value }}</strong></td></tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
 <div class="card">
   <h2>Conteúdo</h2>
   <div class="md-body">{{ version.body_md|markdown|safe }}</div>
 </div>
+
+{% if metrics or (publication and not historical) %}
+<div class="card">
+  <h2>Impacto — hipótese × observado</h2>
+  {% if metrics %}
+  <table>
+    <tr><th>Indicador</th><th>Janela</th><th>Esperado</th><th>Observado</th></tr>
+    {% for m in metrics %}
+    <tr>
+      <td>{{ m.indicator.name }}</td>
+      <td>{{ m.window_days }}d</td>
+      <td>{{ m.expected_change }}</td>
+      <td>
+        {% if m.observed_change %}
+          {{ m.observed_change }}
+          <span class="help">({{ m.recorder.display_name if m.recorder }} em {{ m.recorded_at.strftime('%d/%m/%Y') if m.recorded_at }})</span>
+        {% elif version.status in ('effective', 'superseded') and user.role != 'reader' and not historical %}
+        <form class="inline" method="post" action="/impact-metrics/{{ m.id }}/observed">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="version_id" value="{{ version.id }}">
+          <input type="text" name="observed_change" placeholder="observado" required style="width:180px">
+          <button type="submit" class="btn-sm btn-secondary">registrar</button>
+        </form>
+        {% else %}⏳ pendente{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma hipótese estruturada declarada nesta versão.</p>
+  {% endif %}
+
+  {% if publication and not historical %}
+  {% for r in impact_records %}
+  <div class="comment">
+    <div class="meta">Impacto narrativo · {{ r.recorded_at.strftime('%d/%m/%Y %H:%M') }}</div>
+    <p>{{ r.observed_impact }}</p>
+  </div>
+  {% endfor %}
+  {% if version.status in ('effective', 'superseded') and user.role != 'reader' %}
+  <form class="stack" method="post" action="/publications/{{ publication.id }}/impact">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="version_id" value="{{ version.id }}">
+    <label for="observed_impact">Impacto observado (narrativo)</label>
+    <textarea id="observed_impact" name="observed_impact" placeholder="Efeito real vs. esperado, contexto, aprendizados" required></textarea>
+    <div class="actions"><button type="submit" class="btn-secondary">Registrar impacto</button></div>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
+{% if version.status in ('published', 'effective', 'superseded') and not historical %}
+<div class="card">
+  <h2>Referências de implementação</h2>
+  {% if implementation_refs %}
+  <table>
+    <tr><th>Sistema</th><th>Artefato</th><th>Versão</th><th>Nó/caminho</th><th>Implantado em</th></tr>
+    {% for r in implementation_refs %}
+    <tr>
+      <td>{{ r.system }}</td>
+      <td>{% if r.url %}<a href="{{ r.url }}">{{ r.artifact }}</a>{% else %}{{ r.artifact }}{% endif %}</td>
+      <td>{{ r.artifact_version }}</td>
+      <td>{{ r.node_path or '—' }}</td>
+      <td>{{ r.deployed_at.strftime('%d/%m/%Y') if r.deployed_at else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Onde esta versão está implementada no motor de decisão? Registro manual — navegação da documentação à implementação.</p>
+  {% endif %}
+  {% if user.role in ('author', 'approver', 'admin') %}
+  <form class="filters" method="post" action="/versions/{{ version.id }}/implementation-refs">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="system" placeholder="sistema (ex.: PowerCurve)" required style="width:160px">
+    <input type="text" name="artifact" placeholder="strategy/ruleset/arquivo" required style="width:180px">
+    <input type="text" name="artifact_version" placeholder="versão" required style="width:90px">
+    <input type="text" name="node_path" placeholder="nó (opcional)" style="width:130px">
+    <input type="date" name="deployed_at">
+    <button type="submit" class="btn-secondary">Registrar</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
 
 {% if attachments %}
 <div class="card">

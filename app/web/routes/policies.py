@@ -24,8 +24,10 @@ from app.models import (
 )
 from app.services import (
     diff_service,
+    import_service,
     policy_service,
     search_service,
+    structured_fields,
     version_service,
     workflow_service,
 )
@@ -129,6 +131,52 @@ def create_policy(
         )
     db.commit()
     return RedirectResponse(f"/policies/{policy.id}?msg=Pol%C3%ADtica+criada", status_code=303)
+
+
+@router.get("/policies/import")
+def import_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(Role.AUTHOR, Role.ADMIN)),
+):
+    return render(request, "policy/import.html", user, results=None, **_catalog_context(db))
+
+
+@router.post("/policies/import")
+async def import_batch(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(Role.AUTHOR, Role.ADMIN)),
+):
+    from fastapi import UploadFile
+
+    from app.web.csrf import validate_csrf_token
+
+    form = await request.form()
+    if not validate_csrf_token(str(form.get("csrf_token") or ""), user.id):
+        return RedirectResponse("/policies/import?msg=Sess%C3%A3o+inv%C3%A1lida", status_code=303)
+    area_id = str(form.get("area_id") or "")
+    policy_type = str(form.get("policy_type") or "outro")
+    files: list[tuple[str, bytes]] = []
+    for upload in form.getlist("files"):
+        if isinstance(upload, UploadFile) and upload.filename:
+            files.append((upload.filename, await upload.read()))
+    try:
+        results = import_service.import_batch(
+            db, user, files=files, area_id=area_id, policy_type=policy_type
+        )
+    except DomainError as exc:
+        return render(
+            request, "policy/import.html", user, results=None, msg=str(exc),
+            **_catalog_context(db),
+        )
+    db.commit()
+    imported = sum(1 for r in results if r.ok)
+    return render(
+        request, "policy/import.html", user, results=results,
+        msg=f"{imported} de {len(results)} arquivo(s) importado(s)",
+        **_catalog_context(db),
+    )
 
 
 @router.get("/policies/{policy_id}")
@@ -316,4 +364,7 @@ def version_at_view(
         request, "version/view.html", user,
         version=version, policy=policy, publication=publication,
         historical=True, comments=[], attachments=[],
+        field_values=structured_fields.load(version.structured_fields),
+        field_defs=structured_fields.defs_for(policy.policy_type),
+        metrics=[], impact_records=[], implementation_refs=[],
     )

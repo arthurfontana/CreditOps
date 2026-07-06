@@ -25,6 +25,7 @@ Esta pasta contém a sequência de prompts para implementar a aplicação usando
 | 08 | [08-busca-e-ux.md](08-busca-e-ux.md) | Busca FTS5, home por perfil, polimento de UX | 02 |
 | 09 | [09-testes-e-operacao.md](09-testes-e-operacao.md) | Suíte de testes dos invariantes, backup/restore, seed, runbook | 12, 09 |
 | 10 | [10-ia-plugavel.md](10-ia-plugavel.md) | (v2, opcional) Módulo de IA: contrato, adapters, features de sugestão | 08 |
+| 11 | [11-governanca-v1.md](11-governanca-v1.md) | ✅ (implementado) v1 completa: notificações, áreas, hash chain, multinível, delegação, releases, campos estruturados, demandas, indicadores/impacto, implementação, dashboard, importador, PDF | 03, 05, 06, 11, 16 |
 
 > As referências "04, 10" etc. são os arquivos `docs/wiki/NN-*.md` correspondentes.
 

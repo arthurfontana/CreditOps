@@ -17,6 +17,10 @@
   {% if policy.current_version %}
     <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/export.md">Exportar .md</a>
     <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/export.json">Exportar .json</a>
+    <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/export.pdf">Exportar .pdf</a>
+  {% endif %}
+  {% if user.role != 'reader' %}
+  <a class="btn btn-secondary btn-sm" href="/change-requests/new?policy_id={{ policy.id }}">Solicitar mudança</a>
   {% endif %}
   <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/dossier">Dossiê de auditoria</a>
 </div>

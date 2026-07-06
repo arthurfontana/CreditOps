@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ cr.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/change-requests">Demandas</a> → {{ cr.code }}</div>
+<h1>{{ cr.code }} — {{ cr.title }}
+  <span class="badge {{ 'effective' if cr.status == 'done' else 'draft' }}">{{ cr_statuses[cr.status] if cr.status in cr_statuses else cr.status }}</span>
+</h1>
+
+<p class="help">
+  Solicitante: {{ cr.requester.display_name if cr.requester }} ·
+  Área: {{ cr.area.name if cr.area }} ·
+  Prioridade: {{ priorities[cr.priority] if cr.priority in priorities else cr.priority }} ·
+  Aberta em {{ cr.created_at.strftime('%d/%m/%Y') }}
+  {% if cr.closed_at %} · encerrada em {{ cr.closed_at.strftime('%d/%m/%Y') }}{% endif %}
+  {% if lead_time is not none %} · <strong>lead time: {{ lead_time }} dia(s)</strong>{% endif %}
+</p>
+
+{% if cr.description_md %}
+<div class="card"><h2>Motivação</h2><div class="md-body">{{ cr.description_md|markdown|safe }}</div></div>
+{% endif %}
+
+{% if cr.resolution %}
+<div class="card"><h2>Resolução</h2><p>{{ cr.resolution }}</p></div>
+{% endif %}
+
+<div class="card">
+  <h2>Política afetada</h2>
+  {% if cr.policy %}
+  <p><a href="/policies/{{ cr.policy.id }}">{{ cr.policy.code }} — {{ cr.policy.title }}</a></p>
+  {% else %}
+  <p class="help">Demanda de política nova.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Mudanças geradas por esta demanda</h2>
+  {% if cr.versions %}
+  <ul class="timeline">
+    {% for v in cr.versions %}
+    <li><span class="vnum">v{{ v.version_number }}</span>
+      <a href="/versions/{{ v.id }}">{{ v.policy.code }} — {{ v.policy.title }}</a>
+      <span class="badge {{ v.status }}">{{ status_label(v.status) }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="help">Nenhuma versão vinculada ainda — vincule pelo rascunho da política (Editar → Demanda).</p>
+  {% endif %}
+</div>
+
+{% if cr.status in ('open', 'in_progress') %}
+<div class="actions">
+  {% if cr.status == 'open' and user.role in ('author', 'approver', 'admin') %}
+  <form class="inline" method="post" action="/change-requests/{{ cr.id }}/start">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn-secondary">Marcar em andamento</button>
+  </form>
+  {% endif %}
+  {% if user.role in ('approver', 'admin') %}
+  <form class="inline" method="post" action="/change-requests/{{ cr.id }}/reject">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="justification" placeholder="justificativa da rejeição" required style="width:280px">
+    <button type="submit" class="btn-danger">Rejeitar demanda</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
