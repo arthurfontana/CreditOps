@@ -37,6 +37,7 @@ ignore = ["B008"]  # FastAPI Depends() em default de parâmetro é idiomático
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]
