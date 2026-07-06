@@ -8,6 +8,7 @@
 | Sistema vira "cemitério de documentos" (cadastra e não atualiza) | Média | Alto | Filas de pendência visíveis; recertificação periódica (v2); dashboard de políticas paradas (v1) |
 | Dupla fonte de verdade durante a transição | Alta | Médio | Cutover formal por área: data a partir da qual "só vale o que está no CreditOps", comunicada pela diretoria |
 | Workflow fixo não serve a alguma área | Média | Médio | Fluxo fixo cobre o essencial; multinível na v1; configurável só no enterprise — resistir à parametrização precoce |
+| **Scope creep rumo a motor de decisão / BI / plataforma de A/B** | Média | Alto | Fronteiras explícitas do domínio ([cap. 16](16-dominio-do-produto.md#fronteiras-do-domínio-o-que-fica-fora)): o produto documenta, governa e registra — não executa regras nem calcula indicadores; biblioteca de regras fica exploratória |
 
 ## Riscos técnicos
 
@@ -37,5 +38,7 @@
 | **Snapshot por versão, não delta** | Leitura O(1), zero corrupção de histórico, diff entre quaisquer versões | Duplicação de texto (irrelevante em KBs) |
 | **Workflow fixo no MVP** | Entrega rápida, menos bugs, UX previsível | Empresas com fluxo exótico esperam até enterprise |
 | **Banco relacional, não Git como storage** | Queries de vigência/auditoria triviais; sem shell-out; permissões finas | Perde ferramentas Git prontas (ver [Alternativas](14-alternativas.md)) |
-| **Impacto observado manual, não integrado a BI** | Escopo controlado; sem dependência de dados da carteira | Registro depende de disciplina (mitigado por cobrança na UI) |
+| **Impacto observado manual, não integrado a BI** | Escopo controlado; sem dependência de dados da carteira | Registro depende de disciplina (mitigado por cobrança na UI e por indicadores estruturados na v1) |
+| **Sem biblioteca de regras reutilizáveis no core** | Modelo simples; produto não vira motor de decisão; governança de mudança permanece por política | Regras repetidas entre políticas podem divergir — mitigado por campos estruturados (v1), grafo de referências (v2) e busca; biblioteca fica como exploração enterprise ([cap. 16](16-dominio-do-produto.md)) |
+| **Referência de implementação manual (v1)** | Fecha o elo documentação→motor sem exigir integração com TI | Pode desatualizar; conferência automática só no enterprise |
 | **IA opcional e por sugestão** | Zero dependência, zero vazamento por padrão, aprovável por segurança | Não há automação "mágica"; humano sempre no loop (em governança, isso é requisito, não custo) |

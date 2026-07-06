@@ -23,12 +23,13 @@ Esta wiki é a fonte única de verdade da especificação do produto. As página
 | 13 | [Riscos e Trade-offs](13-riscos-e-trade-offs.md) | Riscos técnicos, de adoção e de governança, com mitigação |
 | 14 | [Alternativas e Trade-offs de Solução](14-alternativas.md) | Soluções mais simples/melhores e quando escolhê-las |
 | 15 | [Conclusão](15-conclusao.md) | Síntese e próximos passos |
+| 16 | [Domínio do Produto](16-dominio-do-produto.md) | **Modelo conceitual do negócio**: conceitos centrais, ciclo fechado da decisão de crédito, fronteiras |
 | — | [Prompts de Execução](../../prompts/README.md) | **Prompts ordenados para implementar a aplicação com modelos mais baratos** |
 
 ## Como usar esta wiki
 
-- **Para entender o produto**: leia 1 → 2 → 3.
-- **Para implementar**: leia 4 → 5 → 6 → 7, depois execute os [prompts](../../prompts/README.md) na ordem.
+- **Para entender o produto**: leia 1 → 2 → 3; para o modelo conceitual do negócio, leia 16.
+- **Para implementar**: leia 16 → 4 → 5 → 6 → 7, depois execute os [prompts](../../prompts/README.md) na ordem.
 - **Para governança e compliance**: leia 6, 7 e 9.
 - **Para decidir se vale a pena**: leia 13 e 14 antes de tudo.
 
@@ -36,4 +37,4 @@ Esta wiki é a fonte única de verdade da especificação do produto. As página
 
 - Toda decisão de arquitetura relevante deve virar um ADR em `docs/adr/`.
 - Páginas desta wiki são versionadas junto com o código — mudança de especificação passa por PR.
-- Termos de negócio estão definidos no [Modelo de Dados](05-modelo-de-dados.md#glossario).
+- Termos de negócio estão definidos no [Domínio do Produto](16-dominio-do-produto.md) (conceitual) e no [Modelo de Dados](05-modelo-de-dados.md#glossario) (glossário técnico).

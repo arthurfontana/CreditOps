@@ -1,5 +1,7 @@
 # 5. Modelo de Dados
 
+> Esta página é a tradução técnica do [Domínio do Produto](16-dominio-do-produto.md) — leia-o primeiro para entender os conceitos de negócio.
+
 ## Princípios
 
 1. **Separação política × versão**: `policy` é o "contêiner" estável (identidade, código, dono); `policy_version` é o conteúdo em um ponto no tempo. Tudo que muda vive na versão.
@@ -26,6 +28,18 @@
  audit_log (referencia qualquer entidade por tipo+id)
  status_transition (histórico de estados de cada versão)
 ```
+
+### Extensões do ciclo de mudança (v1/v2)
+
+```
+ change_request ──0:N── policy_version ──1:N── impact_metric ──N:1── indicator
+      (v1)                                          (v1)              (v1)
+                        policy_version ──1:N── implementation_ref (v1)
+                        policy ──N:M── policy_reference ──► policy | artefato (v2)
+                        publication.rollout_scope: full | pilot (v2)
+```
+
+Ver o mapa conceitual completo no [Domínio do Produto](16-dominio-do-produto.md#mapa-de-relacionamentos).
 
 ## Entidades
 
@@ -107,11 +121,62 @@ Relações N:M: `policy_product`, `policy_segment`, `policy_tag`.
 | effective_from | date | **quando entra em vigor** (≥ published_at) |
 | effective_until | date, nullable | preenchida quando substituída |
 | release_id | fk → release, nullable | v1 |
+| rollout_scope | enum | `full` (padrão) ou `pilot` — publicação-experimento (v2) |
+| pilot_description / pilot_ends_at | text / date, nullable | escopo e prazo do piloto (v2); promoção/encerramento seguem o fluxo normal |
 
 > A vigência histórica de qualquer data D é: a versão cuja `effective_from ≤ D < effective_until` (ou `effective_until is null`). Isso responde "o que valia em 15/03?" com uma query.
 
-### `impact_record` — Impacto observado (v1)
-`id`, `publication_id`, `observed_impact` (text), `metrics` (json livre: ex. inadimplência antes/depois), `recorded_by`, `recorded_at`. Fecha o ciclo esperado × observado.
+### `impact_record` — Impacto observado, narrativa (v1)
+`id`, `publication_id`, `observed_impact` (text), `metrics` (json livre: ex. inadimplência antes/depois), `recorded_by`, `recorded_at`. Avaliação qualitativa que fecha o ciclo esperado × observado.
+
+### `indicator` — Catálogo de indicadores (v1)
+`id`, `code` unique (ex.: `aprovacao`, `conversao`, `fpd30`, `fpd60`, `over90`, `perda`, `receita`, `churn`), `name`, `unit`, `desired_direction` (`up`, `down`, `contextual`), `is_active`. Catálogo administrável — hipóteses e resultados ficam comparáveis entre mudanças (ver [Domínio](16-dominio-do-produto.md#indicador--v1)).
+
+### `impact_metric` — Hipótese e observado por indicador (v1)
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | uuid pk | |
+| version_id | fk → policy_version | a mudança que declara a hipótese |
+| indicator_id | fk → indicator | |
+| expected_change | text | ex.: `+3 p.p. no segmento PF` — declarado na submissão |
+| observed_change | text, nullable | preenchido pós-vigência |
+| window_days | int | janela da observação: 30, 60 ou 90 |
+| recorded_by / recorded_at | fk / timestamp, nullable | |
+
+Uma linha por (indicador, janela). Complementa `expected_impact`/`impact_record` (narrativos) com dados estruturados. O sistema **cobra e registra** — não calcula (não é BI).
+
+### `change_request` — Demanda de mudança (v1)
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | uuid pk | |
+| code | text unique | ex.: `DEM-2026-041` |
+| title / description_md | text | motivação da demanda |
+| requested_by | fk → user | solicitante |
+| area_id | fk → area | |
+| policy_id | fk → policy, nullable | null quando a demanda é de política nova |
+| priority | enum | `low`, `medium`, `high`, `regulatory` |
+| status | enum | `open`, `in_progress`, `done`, `rejected` (rejeição com justificativa — também é decisão registrada) |
+| created_at / closed_at | timestamp | lead time = demanda aberta → versão em vigor |
+
+`policy_version.change_request_id` (fk nullable, v1) liga a mudança à demanda que a originou. Uma demanda pode gerar N versões (inclusive em políticas diferentes).
+
+### `implementation_ref` — Referência de implementação (v1)
+| Campo | Tipo | Notas |
+|---|---|---|
+| id | uuid pk | |
+| version_id | fk → policy_version | |
+| system | text | ex.: `PowerCurve`, `Simplifique`, motor interno |
+| artifact | text | strategy / ruleset / arquivo |
+| artifact_version | text | versão do artefato no motor |
+| node_path | text, nullable | nó/caminho dentro do artefato |
+| url | text, nullable | link para o sistema de origem |
+| deployed_at | date, nullable | |
+| registered_by / created_at | fk / timestamp | |
+
+Navegação documentação → implementação; responde em auditoria "esta regra está implementada onde, em qual versão?". No v1 é registro manual; conferência automática é enterprise.
+
+### `policy_reference` — Grafo de referências (v2)
+`id`, `from_policy_id` (fk), `to_type` (`policy` | `artifact`), `to_policy_id` (fk nullable), `artifact_name` (text nullable — ex.: "Score Serasa", "Motor Antifraude"), `relation` (`usa`, `depende_de`, `substitui`), `note`, `created_by`, `created_at`. Habilita análise de impacto: "se eu mudar o Score X, quais políticas são afetadas?".
 
 ### `comment` — Comentário
 `id`, `version_id`, `author_id`, `body_md`, `anchor` (âncora opcional a um trecho/heading), `resolved_at`, `created_at`.
@@ -165,3 +230,11 @@ Chave/valor de configuração administrável (nome da empresa, SMTP, plugin de I
 | **Rollback** | Nova versão cujo conteúdo copia uma versão anterior, com aprovação expressa |
 | **Release** | Grupo de publicações feitas em conjunto |
 | **Mudança** | Diferença entre duas versões + justificativa + impacto |
+| **Demanda** | Solicitação de mudança que antecede o rascunho, com solicitante, motivação e status próprios (v1) |
+| **Indicador** | Métrica de negócio padronizada em catálogo (aprovação, FPD60, over90…) usada em hipóteses e resultados (v1) |
+| **Hipótese** | Impacto esperado estruturado por indicador, declarado na submissão da mudança (v1) |
+| **Experimento / Piloto** | Publicação com escopo restrito, prazo e critério de sucesso; promovida, ajustada ou encerrada pelo fluxo normal (v2) |
+| **Implementação** | Referência da versão de política ao artefato do motor de decisão que a implementa (v1) |
+| **Referência entre políticas** | Aresta do grafo `usa` / `depende_de` / `substitui` entre políticas e artefatos (v2) |
+
+Definições conceituais completas: [Domínio do Produto](16-dominio-do-produto.md).
