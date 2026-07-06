@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if target else 'Novo' }} usuário — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs">Administração → <a href="/admin/users">Usuários</a> → {{ 'Editar' if target else 'Novo' }}</div>
+<h1>{{ 'Editar usuário' if target else 'Novo usuário' }}</h1>
+{% if msg %}<div class="flash flash-error">{{ msg }}</div>{% endif %}
+<form class="stack card" method="post" action="{{ '/admin/users/' + target.id + '/edit' if target else '/admin/users' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if not target %}
+  <label for="username">Usuário (login)</label>
+  <input type="text" id="username" name="username" required>
+  {% endif %}
+  <label for="display_name">Nome</label>
+  <input type="text" id="display_name" name="display_name" value="{{ target.display_name if target }}" required>
+  <label for="email">E-mail</label>
+  <input type="email" id="email" name="email" value="{{ target.email if target }}" required>
+  <label for="role">Papel</label>
+  <select id="role" name="role" required>
+    {% for r in ['admin', 'author', 'reviewer', 'approver', 'reader'] %}
+    <option value="{{ r }}" {% if target and target.role == r %}selected{% endif %}>{{ role_label(r) }}</option>
+    {% endfor %}
+  </select>
+  <label for="area_id">Área</label>
+  <select id="area_id" name="area_id">
+    <option value="">—</option>
+    {% for area in areas %}<option value="{{ area.id }}" {% if target and target.area_id == area.id %}selected{% endif %}>{{ area.name }}</option>{% endfor %}
+  </select>
+  {% if not target %}
+  <label for="password">Senha inicial (mín. 8 caracteres — o usuário deverá trocá-la)</label>
+  <input type="password" id="password" name="password" required minlength="8">
+  {% endif %}
+  <label><input type="checkbox" name="is_auditor" value="true" {% if target and target.is_auditor %}checked{% endif %} style="width:auto"> Acesso de auditor (consulta da trilha)</label>
+  {% if target %}
+  <label><input type="checkbox" name="is_active" value="true" {% if target.is_active %}checked{% endif %} style="width:auto"> Ativo</label>
+  {% endif %}
+  <div class="actions">
+    <button type="submit">Salvar</button>
+    <a class="btn btn-secondary" href="/admin/users">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,28 @@
+<table id="policy-table">
+  <thead>
+    <tr><th>Código</th><th>Título</th><th>Área</th><th>Tipo</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+  {% for policy in policies %}
+    <tr>
+      <td><a href="/policies/{{ policy.id }}">{{ policy.code }}</a></td>
+      <td>{{ policy.title }}</td>
+      <td>{{ policy.area.name if policy.area }}</td>
+      <td>{{ policy.policy_type }}</td>
+      <td>
+        {% if policy.lifecycle_status == 'archived' %}
+          <span class="badge archived">Arquivada</span>
+        {% elif policy.current_version %}
+          {% set pub = publications[policy.id] %}
+          <span class="badge effective">EM VIGOR v{{ policy.current_version.version_number }}
+            {% if pub %}desde {{ pub.effective_from.strftime('%d/%m/%Y') }}{% endif %}</span>
+        {% else %}
+          <span class="badge draft">sem versão vigente</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">Nenhuma política encontrada.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

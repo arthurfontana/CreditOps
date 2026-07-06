@@ -1,0 +1,25 @@
+# CreditOps — configuração (copie para settings.toml e ajuste)
+# Env vars com prefixo CREDITOPS_ têm precedência sobre este arquivo.
+# SEGREDOS (secret_key, senhas SMTP, chaves de IA) NUNCA vão aqui:
+# use variáveis de ambiente.
+
+[app]
+app_name = "CreditOps"
+# db_path = "data/creditops.db"
+# data_dir = "data"
+# cookie_secure = true          # false apenas para dev local em http
+# session_max_age_seconds = 28800
+# login_max_failures = 5
+# login_lockout_minutes = 15
+# attachment_max_bytes = 20971520
+# attachment_allowed_extensions = "pdf,docx,xlsx,png,jpg,jpeg,csv,txt,md"
+
+# ── v1+ (pontos de extensão; ignorados no MVP) ──────────────────────────────
+# [plugins]
+# notify_email = false
+
+# [ai]
+# provider = "none"             # none | openai | anthropic | gemini | internal
+# model = ""
+# base_url = ""
+# timeout_seconds = 30

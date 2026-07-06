@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Usuários — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs">Administração → Usuários</div>
+<h1>Usuários</h1>
+<div class="actions">
+  <a class="btn" href="/admin/users/new">Novo usuário</a>
+  <a class="btn btn-secondary" href="/admin/catalogs/areas">Áreas</a>
+  <a class="btn btn-secondary" href="/admin/catalogs/products">Produtos</a>
+  <a class="btn btn-secondary" href="/admin/catalogs/segments">Segmentos</a>
+  <a class="btn btn-secondary" href="/admin/tags">Tags</a>
+</div>
+<table>
+  <thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Papel</th><th>Auditor</th><th>Ativo</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.display_name }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ role_label(u.role) }}</td>
+      <td>{{ 'sim' if u.is_auditor else '—' }}</td>
+      <td>{{ 'sim' if u.is_active else 'desativado' }}</td>
+      <td class="actions">
+        <a class="btn btn-secondary btn-sm" href="/admin/users/{{ u.id }}/edit">Editar</a>
+        <form class="inline" method="post" action="/admin/users/{{ u.id }}/reset-password"
+              onsubmit="return confirm('Gerar senha temporária para {{ u.display_name }}?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn-sm btn-secondary">Reset de senha</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

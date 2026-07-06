@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Busca — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Busca</h1>
+<form action="/search" method="get" class="stack card">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código, título ou conteúdo…" autofocus>
+</form>
+{% if q %}
+  {% if hits %}
+  <table>
+    <thead><tr><th>Código</th><th>Título</th><th>Trecho</th></tr></thead>
+    <tbody>
+    {% for hit in hits %}
+      <tr>
+        <td><a href="/policies/{{ hit.policy_id }}">{{ hit.code }}</a></td>
+        <td>{{ hit.title }}</td>
+        <td>{{ hit.snippet|safe }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>Nenhuma política vigente encontrada para "{{ q }}".</p>{% endif %}
+{% endif %}
+{% endblock %}

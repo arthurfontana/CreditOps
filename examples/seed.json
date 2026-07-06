@@ -1,0 +1,27 @@
+{
+  "areas": [
+    {"name": "Crédito Varejo", "code": "CRD"},
+    {"name": "Crédito Atacado", "code": "ATA"},
+    {"name": "Cobrança e Recuperação", "code": "COB"}
+  ],
+  "products": [
+    {"name": "Cartão de Crédito", "code": "CARD"},
+    {"name": "CDC", "code": "CDC"},
+    {"name": "Consignado", "code": "CONS"},
+    {"name": "Capital de Giro", "code": "KGIRO"}
+  ],
+  "segments": [
+    {"name": "Pessoa Física", "code": "PF"},
+    {"name": "Pessoa Jurídica", "code": "PJ"},
+    {"name": "MEI", "code": "MEI"}
+  ],
+  "tags": ["bacen", "limite", "renegociacao", "score", "alcada"],
+  "users": [
+    {"username": "admin", "name": "Alice Admin", "role": "admin"},
+    {"username": "ana", "name": "Ana Autora", "role": "author"},
+    {"username": "rafael", "name": "Rafael Revisor", "role": "reviewer"},
+    {"username": "carlos", "name": "Carlos Gerente", "role": "approver"},
+    {"username": "lia", "name": "Lia Leitora", "role": "reader"},
+    {"username": "aud", "name": "Otto Auditor", "role": "reader", "is_auditor": true}
+  ]
+}

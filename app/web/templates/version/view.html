@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ policy.code }} v{{ version.version_number }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → v{{ version.version_number }}</div>
+<h1>{{ policy.code }} — v{{ version.version_number }}
+  <span class="badge {{ version.status }}">{{ status_label(version.status) }}</span>
+  {% if version.is_rollback %}<span class="badge superseded">rollback</span>{% endif %}
+</h1>
+
+{% if historical and publication %}
+<div class="banner">Versão histórica — vigente de {{ publication.effective_from.strftime('%d/%m/%Y') }}
+  a {{ publication.effective_until.strftime('%d/%m/%Y') if publication.effective_until else 'hoje' }}.</div>
+{% endif %}
+
+<p class="help">
+  Autor: {{ version.author.display_name if version.author }} · criada em {{ version.created_at.strftime('%d/%m/%Y %H:%M') }}
+  {% if version.submitted_at %} · submetida em {{ version.submitted_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+  {% if version.content_hash %} · hash {{ version.content_hash[:12] }}…{% endif %}
+</p>
+
+{% if not historical %}
+<div class="actions">
+  {# ações condicionais a papel + estado — a autorização real é do service layer #}
+  {% if version.status == 'draft' and user.role in ('author', 'admin') and (version.created_by == user.id or user.role == 'admin') %}
+    <a class="btn" href="/versions/{{ version.id }}/edit">Editar conteúdo</a>
+    <form class="inline" method="post" action="/versions/{{ version.id }}/submit">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">Submeter para revisão</button>
+    </form>
+  {% endif %}
+  {% if version.status == 'in_review' %}
+    {% if user.role == 'reviewer' %}
+    <form class="inline" method="post" action="/versions/{{ version.id }}/send-to-approval">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">Revisão concluída — enviar para aprovação</button>
+    </form>
+    {% endif %}
+    {% if user.role in ('reviewer', 'author') %}
+    <form class="inline" method="post" action="/versions/{{ version.id }}/request-changes">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="text" name="reason" placeholder="motivo (opcional)" style="width:220px">
+      <button type="submit" class="btn-secondary">Devolver para ajustes</button>
+    </form>
+    {% endif %}
+  {% endif %}
+  {% if version.status == 'in_approval' and user.role == 'approver' %}
+    <a class="btn" href="/versions/{{ version.id }}/review">Analisar para decisão</a>
+  {% endif %}
+  {% if version.status == 'approved' and user.role == 'approver' %}
+    <form class="inline" method="post" action="/versions/{{ version.id }}/publish"
+          onsubmit="return confirm('Publicar v{{ version.version_number }}? A vigência começa na data escolhida.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Vigência a partir de <input type="date" name="effective_from" required></label>
+      <button type="submit">Publicar</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if version.change_summary or version.expected_impact %}
+<div class="grid2">
+  <div class="card"><h2>Justificativa da alteração</h2><p>{{ version.change_summary or '—' }}</p></div>
+  <div class="card"><h2>Impacto esperado</h2><p>{{ version.expected_impact or '—' }}</p></div>
+</div>
+{% endif %}
+
+{% if version.status == 'draft' and user.role in ('author', 'admin') and not historical %}
+<div class="card">
+  <h2>Justificativa e impacto (obrigatórios para submeter)</h2>
+  <form class="stack" method="post" action="/versions/{{ version.id }}/fields">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="change_summary">Justificativa da alteração</label>
+    <textarea id="change_summary" name="change_summary">{{ version.change_summary or '' }}</textarea>
+    <label for="expected_impact">Impacto esperado</label>
+    <textarea id="expected_impact" name="expected_impact">{{ version.expected_impact or '' }}</textarea>
+    <div class="actions"><button type="submit">Salvar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Conteúdo</h2>
+  <div class="md-body">{{ version.body_md|markdown|safe }}</div>
+</div>
+
+{% if attachments %}
+<div class="card">
+  <h2>Anexos</h2>
+  <ul>
+  {% for a in attachments %}
+    <li><a href="/attachments/{{ a.id }}">{{ a.filename }}</a>
+      ({{ (a.size_bytes / 1024)|round(1) }} KB · sha256 {{ a.sha256[:12] }}…)</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not historical %}
+<div class="card">
+  <h2>Comentários</h2>
+  {% for c in comments %}
+  <div class="comment {% if c.resolved_at %}resolved{% endif %}">
+    <div class="meta">{{ c.author.display_name if c.author }} · {{ c.created_at.strftime('%d/%m/%Y %H:%M') }}
+      {% if c.anchor %} · em “{{ c.anchor }}”{% endif %}
+      {% if c.resolved_at %} · resolvido{% elif user.role != 'reader' %}
+      <form class="inline" method="post" action="/comments/{{ c.id }}/resolve">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="version_id" value="{{ version.id }}">
+        <button type="submit" class="btn-sm btn-secondary">resolver</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="md-body">{{ c.body_md|markdown|safe }}</div>
+  </div>
+  {% else %}
+  <p class="help">Nenhum comentário.</p>
+  {% endfor %}
+  {% if user.role != 'reader' %}
+  <form class="stack" method="post" action="/versions/{{ version.id }}/comments">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="comment_body">Novo comentário</label>
+    <textarea id="comment_body" name="body_md" required></textarea>
+    <label for="comment_anchor">Seção (opcional)</label>
+    <input type="text" id="comment_anchor" name="anchor" placeholder="ex.: Regras">
+    <div class="actions"><button type="submit">Comentar</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

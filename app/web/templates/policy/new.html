@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Nova política — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → Nova política</div>
+<h1>Nova política</h1>
+{% if msg %}<div class="flash flash-error">{{ msg }}</div>{% endif %}
+<form class="stack card" method="post" action="/policies">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="title">Título</label>
+  <input type="text" id="title" name="title" required>
+  <label for="policy_type">Tipo</label>
+  <select id="policy_type" name="policy_type" required>
+    {% for t in policy_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+  </select>
+  <label for="area_id">Área dona</label>
+  <select id="area_id" name="area_id" required>
+    {% for area in areas %}<option value="{{ area.id }}">{{ area.name }}</option>{% endfor %}
+  </select>
+  <label for="owner_id">Responsável de negócio</label>
+  <select id="owner_id" name="owner_id" required>
+    {% for owner in owners %}<option value="{{ owner.id }}" {% if owner.id == user.id %}selected{% endif %}>{{ owner.display_name }}</option>{% endfor %}
+  </select>
+  <label for="product_ids">Produtos</label>
+  <select id="product_ids" name="product_ids" multiple size="4">
+    {% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}
+  </select>
+  <label for="segment_ids">Segmentos</label>
+  <select id="segment_ids" name="segment_ids" multiple size="4">
+    {% for segment in segments %}<option value="{{ segment.id }}">{{ segment.name }}</option>{% endfor %}
+  </select>
+  <label for="tag_ids">Tags</label>
+  <select id="tag_ids" name="tag_ids" multiple size="4">
+    {% for tag in tags %}<option value="{{ tag.id }}">{{ tag.name }}</option>{% endfor %}
+  </select>
+  <div class="actions">
+    <button type="submit">Criar política (nasce com v1 em rascunho)</button>
+    <a class="btn btn-secondary" href="/policies">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

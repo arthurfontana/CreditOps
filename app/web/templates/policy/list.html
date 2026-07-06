@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Catálogo — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs">Catálogo</div>
+<h1>Catálogo de políticas</h1>
+
+<form class="filters" method="get" action="/policies"
+      hx-get="/policies" hx-target="#policy-table" hx-swap="outerHTML"
+      hx-trigger="change, keyup delay:400ms from:input[name='text']">
+  <select name="area_id" aria-label="Área">
+    <option value="">Todas as áreas</option>
+    {% for area in areas %}<option value="{{ area.id }}" {% if filters.area_id == area.id %}selected{% endif %}>{{ area.name }}</option>{% endfor %}
+  </select>
+  <select name="product_id" aria-label="Produto">
+    <option value="">Todos os produtos</option>
+    {% for product in products %}<option value="{{ product.id }}" {% if filters.product_id == product.id %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
+  </select>
+  <select name="segment_id" aria-label="Segmento">
+    <option value="">Todos os segmentos</option>
+    {% for segment in segments %}<option value="{{ segment.id }}" {% if filters.segment_id == segment.id %}selected{% endif %}>{{ segment.name }}</option>{% endfor %}
+  </select>
+  <select name="policy_type" aria-label="Tipo">
+    <option value="">Todos os tipos</option>
+    {% for t in policy_types %}<option value="{{ t }}" {% if filters.policy_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <select name="tag_id" aria-label="Tag">
+    <option value="">Todas as tags</option>
+    {% for tag in tags %}<option value="{{ tag.id }}" {% if filters.tag_id == tag.id %}selected{% endif %}>{{ tag.name }}</option>{% endfor %}
+  </select>
+  <input type="text" name="text" value="{{ filters.text or '' }}" placeholder="título ou código">
+  <button type="submit" class="btn-sm">Filtrar</button>
+</form>
+
+{% include "policy/_table.html" %}
+
+{% if user.role in ('author', 'admin') %}
+<div class="actions"><a class="btn" href="/policies/new">Nova política</a></div>
+{% endif %}
+{% endblock %}

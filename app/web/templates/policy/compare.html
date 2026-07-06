@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Comparar {{ policy.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → Comparar</div>
+<h1>{{ policy.code }} — Comparação de versões</h1>
+
+<form class="filters" method="get" action="/policies/{{ policy.id }}/compare">
+  <select name="from_version" aria-label="Versão base">
+    {% for v in versions %}<option value="{{ v.version_number }}" {% if from_version and v.id == from_version.id %}selected{% endif %}>v{{ v.version_number }}</option>{% endfor %}
+  </select>
+  <span>→</span>
+  <select name="to_version" aria-label="Versão comparada">
+    {% for v in versions %}<option value="{{ v.version_number }}" {% if to_version and v.id == to_version.id %}selected{% endif %}>v{{ v.version_number }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="btn-sm">Comparar</button>
+</form>
+
+{% if rows is not none %}
+<p>
+  <strong>v{{ from_version.version_number }} → v{{ to_version.version_number }}</strong>
+  · <span style="color: var(--green)">+{{ stats.added }}</span>
+  / <span style="color: var(--red)">−{{ stats.removed }}</span> linhas
+  {% if to_version.change_summary %} · justificativa: {{ to_version.change_summary }}{% endif %}
+</p>
+<div class="card" style="overflow-x:auto">
+  <h2>Lado a lado</h2>
+  <table class="diff">
+    {% for row in rows %}
+    <tr class="{{ row.kind }}">
+      <td class="lineno">{{ row.left_no or '' }}</td>
+      <td class="left" style="width:50%">{{ row.left }}</td>
+      <td class="lineno">{{ row.right_no or '' }}</td>
+      <td class="right" style="width:50%">{{ row.right }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<div class="card">
+  <h2>Diff unificado</h2>
+  <pre class="unified">{{ unified or 'Sem diferenças.' }}</pre>
+</div>
+{% else %}
+<p class="help">Selecione duas versões para comparar.</p>
+{% endif %}
+{% endblock %}

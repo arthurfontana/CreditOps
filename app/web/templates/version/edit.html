@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Editar v{{ version.version_number }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → <a href="/versions/{{ version.id }}">v{{ version.version_number }}</a> → Editar</div>
+<h1>Editando {{ policy.code }} v{{ version.version_number }} <span class="badge {{ version.status }}">{{ status_label(version.status) }}</span></h1>
+
+<form method="post" action="/versions/{{ version.id }}/edit" id="editor-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="grid2">
+    <div class="card">
+      <h2>Markdown <span id="save-indicator" class="save-status"></span></h2>
+      <textarea class="editor" name="body_md" id="body_md"
+                hx-post="/versions/{{ version.id }}/edit"
+                hx-trigger="keyup changed delay:30s"
+                hx-target="#save-indicator"
+                hx-include="#editor-form">{{ version.body_md }}</textarea>
+    </div>
+    <div class="card">
+      <h2>Preview</h2>
+      <div id="preview"
+           hx-post="/versions/{{ version.id }}/preview"
+           hx-trigger="load, keyup changed delay:1s from:#body_md"
+           hx-include="#editor-form">
+        <div class="md-body">{{ version.body_md|markdown|safe }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <button type="submit">Salvar</button>
+    <a class="btn btn-secondary" href="/versions/{{ version.id }}">Concluir edição</a>
+  </div>
+</form>
+
+<div class="card">
+  <h2>Anexos</h2>
+  {% if attachments %}
+  <ul>
+    {% for a in attachments %}
+    <li><a href="/attachments/{{ a.id }}">{{ a.filename }}</a> ({{ (a.size_bytes / 1024)|round(1) }} KB)</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/versions/{{ version.id }}/attachments" enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="file">Adicionar anexo (pdf, docx, xlsx, png, jpg, csv, txt — máx. 20MB)</label>
+    <input type="file" id="file" name="file" required>
+    <div class="actions"><button type="submit" class="btn-secondary">Enviar anexo</button></div>
+  </form>
+</div>
+{% endblock %}
