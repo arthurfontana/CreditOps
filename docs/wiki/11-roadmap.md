@@ -65,8 +65,11 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 | P1 | Delegação de aprovação | aprovação |
 | P1 | Releases (pacotes de publicação) | publicação |
 | P1 | Campos estruturados por tipo + diff de campos | versões |
-| P1 | Impacto observado (`impact_record`) + cobrança pendente | publicação |
-| P2 | Dashboard de governança (status, tempos de ciclo, políticas paradas) | dados do MVP |
+| P1 | Demanda de mudança (`change_request`) + lead time demanda→vigência | workflow |
+| P1 | Catálogo de indicadores + hipótese estruturada por mudança (`impact_metric`) | versões |
+| P1 | Impacto observado (`impact_record` + observado por indicador em 30/60/90d) + cobrança pendente | publicação, indicadores |
+| P2 | Referência de implementação (`implementation_ref`, registro manual) | publicação |
+| P2 | Dashboard de governança (status, tempos de ciclo, políticas paradas, esperado × observado) | dados do MVP |
 | P2 | Importador de legado em lote | anexos |
 | P2 | Exportação PDF (plugin) | export |
 
@@ -86,6 +89,8 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 | P2 | RAG local (FTS5/embeddings + provider) para perguntas | IA |
 | P2 | Trilha de leitura obrigatória ("ciência da operação") | auditoria |
 | P2 | Comparação entre políticas | diff |
+| P2 | Grafo de referências entre políticas + análise de impacto | modelo de dados |
+| P2 | Publicação-experimento (piloto com escopo, prazo e promoção) | publicação |
 
 **Gate de saída**: sistemas consumindo a API; IA em uso com pelo menos 1 provedor (ou decisão consciente de não usar).
 
@@ -98,6 +103,8 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 - Workflow configurável por tenant; alçadas parametrizáveis.
 - Assinatura digital de aprovações (não-repúdio forte).
 - Relatórios regulatórios prontos; SLA; MFA; marketplace de provedores de IA.
+- Conferência automática de implantação (integração com motores de decisão).
+- **Exploratório**: biblioteca de regras reutilizáveis — só com valor comprovado ([Domínio](16-dominio-do-produto.md#regra-reutilizável-biblioteca-de-regras--exploratório--enterprise)).
 
 ---
 

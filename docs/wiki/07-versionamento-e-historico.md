@@ -73,8 +73,8 @@ Funções-chave:
 
 O diferencial de governança do produto — fechar o loop de aprendizado:
 
-1. **Antes** (submissão): autor declara `expected_impact` (ex.: "redução de aprovação automática em ~8% no segmento MEI, queda projetada de inadimplência 90d de 0,4 p.p.").
-2. **Depois** (30/60/90 dias — v1): responsável registra `impact_record` com o observado.
-3. Dashboard (v1) lista publicações com impacto observado pendente e permite comparar esperado × observado.
+1. **Antes** (submissão): autor declara `expected_impact` narrativo (ex.: "redução de aprovação automática em ~8% no segmento MEI, queda projetada de inadimplência 90d de 0,4 p.p.") e, na v1, a **hipótese estruturada por indicador** (`impact_metric`: indicador do catálogo + magnitude esperada — ex.: `fpd60 −0,4 p.p.`).
+2. **Depois** (30/60/90 dias — v1): responsável registra o observado — narrativo (`impact_record`) e por indicador/janela (`impact_metric.observed_change`).
+3. Dashboard (v1) lista publicações com impacto observado pendente e compara esperado × observado por indicador — respondendo "quais mudanças deram certo?" e "quais pioraram o FPD60?".
 
-O sistema **não calcula** o impacto (não é BI) — ele **cobra e registra** a avaliação, criando disciplina de gestão.
+O sistema **não calcula** o impacto (não é BI) — ele **cobra e registra** a avaliação, criando disciplina de gestão. Conceitos de indicador e hipótese: [Domínio do Produto](16-dominio-do-produto.md#indicador--v1).

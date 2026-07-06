@@ -20,6 +20,7 @@ O produto entrega:
 4. **Vigência explícita**: separação entre "aprovado", "publicado" e "em vigor".
 5. **Trilha de auditoria** completa, append-only, exportável.
 6. **IA opcional e plugável**: resumos, classificação e sugestões quando houver modelo disponível — mas o core funciona 100% sem IA.
+7. **Ciclo de aprendizado** (a partir da v1): demanda → mudança → aprovação → implantação → indicadores → impacto observado — a plataforma governa o ciclo de vida da decisão de crédito, não só o documento (ver [Domínio do Produto](16-dominio-do-produto.md)).
 
 A arquitetura mínima é deliberadamente simples: **Python + FastAPI + SQLite + Markdown**, um único processo, sem dependências de SaaS externo. Isso permite começar em um servidor interno qualquer e evoluir, sem reescrita, até uma versão enterprise multi-tenant.
 

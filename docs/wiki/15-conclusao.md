@@ -10,6 +10,7 @@
 6. **IA como módulo plugável**: um contrato, N adapters, features individualmente desligáveis, credenciais isoladas, `provider = none` por padrão ([cap. 8](08-ia-modular.md)).
 7. **Caminho de evolução** com gates de adoção: MVP → v1 → v2 → enterprise, cada fase resolvendo uma dor completa ([caps. 3](03-mvp-e-evolucao.md) e [11](11-roadmap.md)).
 8. **Plano de execução operacional**: estrutura de repositório ([cap. 10](10-estrutura-do-repositorio.md)), backlog com critérios de aceite ([cap. 12](12-backlog.md)) e **prompts ordenados para implementar com modelos mais baratos** ([prompts/README.md](../../prompts/README.md)).
+9. **Modelo conceitual do domínio** ([cap. 16](16-dominio-do-produto.md)): definição canônica dos conceitos de negócio e do ciclo fechado demanda → mudança → aprovação → implantação → indicadores → aprendizado, com fronteiras explícitas do que o produto não é.
 
 ## As três apostas centrais
 
