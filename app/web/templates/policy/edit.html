@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ policy.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → Editar metadados</div>
+<h1>Editar metadados — {{ policy.code }}</h1>
+<form class="stack card" method="post" action="/policies/{{ policy.id }}/edit">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="title">Título</label>
+  <input type="text" id="title" name="title" value="{{ policy.title }}" required>
+  <label for="owner_id">Responsável</label>
+  <select id="owner_id" name="owner_id">
+    {% for owner in owners %}<option value="{{ owner.id }}" {% if owner.id == policy.owner_id %}selected{% endif %}>{{ owner.display_name }}</option>{% endfor %}
+  </select>
+  {% set selected_products = policy.products|map(attribute='id')|list %}
+  <label for="product_ids">Produtos</label>
+  <select id="product_ids" name="product_ids" multiple size="4">
+    {% for product in products %}<option value="{{ product.id }}" {% if product.id in selected_products %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
+  </select>
+  {% set selected_segments = policy.segments|map(attribute='id')|list %}
+  <label for="segment_ids">Segmentos</label>
+  <select id="segment_ids" name="segment_ids" multiple size="4">
+    {% for segment in segments %}<option value="{{ segment.id }}" {% if segment.id in selected_segments %}selected{% endif %}>{{ segment.name }}</option>{% endfor %}
+  </select>
+  {% set selected_tags = policy.tags|map(attribute='id')|list %}
+  <label for="tag_ids">Tags</label>
+  <select id="tag_ids" name="tag_ids" multiple size="4">
+    {% for tag in tags %}<option value="{{ tag.id }}" {% if tag.id in selected_tags %}selected{% endif %}>{{ tag.name }}</option>{% endfor %}
+  </select>
+  <div class="actions">
+    <button type="submit">Salvar</button>
+    <a class="btn btn-secondary" href="/policies/{{ policy.id }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Histórico {{ policy.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → Histórico</div>
+<h1>{{ policy.code }} — Linha do tempo</h1>
+
+<div class="card">
+  <h2>Ver em uma data (time travel)</h2>
+  <form class="filters" method="get" action="/policies/{{ policy.id }}/history">
+    <input type="date" name="at" value="{{ at_date.isoformat() if at_date }}" aria-label="Data">
+    <button type="submit" class="btn-sm">Ver versão vigente na data</button>
+  </form>
+  {% if at_date %}
+    {% if at_version %}
+      <p>Em <strong>{{ at_date.strftime('%d/%m/%Y') }}</strong> vigorava a
+        <a href="/versions/{{ at_version.id }}/at-view"><strong>v{{ at_version.version_number }}</strong></a>.</p>
+    {% else %}
+      <p>Nenhuma versão estava em vigor em {{ at_date.strftime('%d/%m/%Y') }}.</p>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Versões</h2>
+  <ul class="timeline">
+  {% for v in versions %}
+    {% set pub = publications[v.id] %}
+    <li>
+      <span class="vnum">v{{ v.version_number }}</span>
+      <span class="badge {{ v.status }}">{{ status_label(v.status) }}</span>
+      {% if pub %}
+        · vigente {{ pub.effective_from.strftime('%d/%m/%Y') }} →
+        {{ pub.effective_until.strftime('%d/%m/%Y') if pub.effective_until else 'atual' }}
+      {% endif %}
+      {% if v.is_rollback and v.based_on %} · rollback para v{{ v.based_on.version_number }}{% endif %}
+      · autor: {{ v.author.display_name if v.author }}
+      · <a href="/versions/{{ v.id }}/at-view">ver conteúdo</a>
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+
+<div class="card">
+  <h2>Comparar versões</h2>
+  <form class="filters" method="get" action="/policies/{{ policy.id }}/compare">
+    <select name="from_version" aria-label="Versão base">
+      {% for v in versions %}<option value="{{ v.version_number }}">v{{ v.version_number }}</option>{% endfor %}
+    </select>
+    <select name="to_version" aria-label="Versão comparada">
+      {% for v in versions %}<option value="{{ v.version_number }}" {% if loop.first %}selected{% endif %}>v{{ v.version_number }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn-sm">Comparar</button>
+  </form>
+</div>
+
+{% if user.role == 'approver' %}
+<div class="card">
+  <h2>Rollback</h2>
+  <p class="help">Cria uma nova versão com o conteúdo da versão-alvo (nada é apagado) e a envia para aprovação expressa.</p>
+  <form class="stack" method="post" action="/policies/{{ policy.id }}/rollback"
+        onsubmit="return confirm('Confirmar rollback? Uma nova versão será criada com o conteúdo da versão-alvo.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="target_version_id">Versão-alvo</label>
+    <select id="target_version_id" name="target_version_id" required>
+      {% for v in versions %}{% if v.status in ('superseded', 'effective') %}
+        <option value="{{ v.id }}">v{{ v.version_number }} ({{ status_label(v.status) }})</option>
+      {% endif %}{% endfor %}
+    </select>
+    <label for="rollback_reason">Justificativa (obrigatória)</label>
+    <input type="text" id="rollback_reason" name="reason" required>
+    <div class="actions"><button type="submit" class="btn-danger">Executar rollback</button></div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

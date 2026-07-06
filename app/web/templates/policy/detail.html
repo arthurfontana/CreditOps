@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ policy.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → {{ policy.code }}</div>
+<h1>{{ policy.code }} — {{ policy.title }}</h1>
+
+<div class="actions">
+  {% if policy.lifecycle_status == 'archived' %}
+    <span class="badge archived">Política arquivada</span>
+  {% elif policy.current_version %}
+    <span class="badge effective">EM VIGOR: v{{ policy.current_version.version_number }}
+      {% if publication %}desde {{ publication.effective_from.strftime('%d/%m/%Y') }}{% endif %}</span>
+  {% else %}
+    <span class="badge draft">sem versão vigente</span>
+  {% endif %}
+  <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/history">Histórico</a>
+  {% if policy.current_version %}
+    <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/export.md">Exportar .md</a>
+    <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/export.json">Exportar .json</a>
+  {% endif %}
+  <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/dossier">Dossiê de auditoria</a>
+</div>
+
+<div class="card">
+  <h2>Metadados</h2>
+  <table>
+    <tr><th>Tipo</th><td>{{ policy.policy_type }}</td></tr>
+    <tr><th>Área</th><td>{{ policy.area.name if policy.area }}</td></tr>
+    <tr><th>Responsável</th><td>{{ policy.owner.display_name if policy.owner }}</td></tr>
+    <tr><th>Produtos</th><td>{{ policy.products|map(attribute='name')|join(', ') or '—' }}</td></tr>
+    <tr><th>Segmentos</th><td>{{ policy.segments|map(attribute='name')|join(', ') or '—' }}</td></tr>
+    <tr><th>Tags</th><td>{{ policy.tags|map(attribute='name')|join(', ') or '—' }}</td></tr>
+  </table>
+  {% if user.role in ('author', 'admin') %}
+  <div class="actions"><a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/edit">Editar metadados</a></div>
+  {% endif %}
+</div>
+
+{% if user.role in ('author', 'admin') and policy.lifecycle_status == 'active' %}
+<div class="actions">
+  {% if open_version %}
+    <a class="btn" href="/versions/{{ open_version.id }}">Versão em andamento: v{{ open_version.version_number }} ({{ status_label(open_version.status) }})</a>
+  {% elif policy.current_version %}
+    <form class="inline" method="post" action="/policies/{{ policy.id }}/revisions">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">Nova revisão</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if policy.current_version %}
+<div class="card">
+  <h2>Conteúdo vigente (v{{ policy.current_version.version_number }})</h2>
+  <div class="md-body">{{ policy.current_version.body_md|markdown|safe }}</div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Versões</h2>
+  <ul class="timeline">
+  {% for v in versions %}
+    <li>
+      <span class="vnum">v{{ v.version_number }}</span>
+      <span class="badge {{ v.status }}">{{ status_label(v.status) }}</span>
+      <a href="/versions/{{ v.id }}">ver</a>
+      {% if v.is_rollback %}· <em>rollback</em>{% endif %}
+      · criada por {{ v.author.display_name if v.author }} em {{ v.created_at.strftime('%d/%m/%Y') }}
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+
+{% if user.role == 'approver' and policy.lifecycle_status == 'active' %}
+<div class="card">
+  <h2>Ações de governança</h2>
+  <form class="stack" method="post" action="/policies/{{ policy.id }}/archive"
+        onsubmit="return confirm('Arquivar a política inteira? Esta ação descontinua a política (o histórico permanece).');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="reason">Justificativa para arquivar</label>
+    <input type="text" id="reason" name="reason" required>
+    <div class="actions"><button type="submit" class="btn-danger">Arquivar política</button></div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

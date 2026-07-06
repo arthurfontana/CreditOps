@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Decisão {{ policy.code }} v{{ version.version_number }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → v{{ version.version_number }} → Decisão</div>
+<h1>Decisão: {{ policy.code }} v{{ version.version_number }}
+  <span class="badge {{ version.status }}">{{ status_label(version.status) }}</span>
+  {% if version.is_rollback %}<span class="badge superseded">rollback</span>{% endif %}
+</h1>
+
+<div class="grid2">
+  <div class="card"><h2>Justificativa da alteração</h2><p>{{ version.change_summary or '—' }}</p></div>
+  <div class="card"><h2>Impacto esperado</h2><p>{{ version.expected_impact or '—' }}</p></div>
+</div>
+
+{% if version.status == 'in_approval' and user.role == 'approver' %}
+<div class="card">
+  <h2>Decidir</h2>
+  {% if version.created_by == user.id %}
+    <div class="banner">Você é o autor desta versão — segregação de funções impede sua decisão.</div>
+  {% else %}
+  <div class="grid2">
+    <form class="stack" method="post" action="/versions/{{ version.id }}/approve"
+          onsubmit="return confirm('Aprovar v{{ version.version_number }}? A aprovação é registrada de forma permanente.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="approve_justification">Observação (opcional)</label>
+      <input type="text" id="approve_justification" name="justification">
+      <div class="actions"><button type="submit">Aprovar</button></div>
+    </form>
+    <form class="stack" method="post" action="/versions/{{ version.id }}/reject">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="reject_justification">Justificativa da rejeição (obrigatória)</label>
+      <input type="text" id="reject_justification" name="justification" required>
+      <div class="actions"><button type="submit" class="btn-danger">Rejeitar</button></div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% elif version.status == 'approved' and user.role == 'approver' %}
+<div class="card">
+  <h2>Publicar</h2>
+  <form class="stack" method="post" action="/versions/{{ version.id }}/publish"
+        onsubmit="return confirm('Publicar v{{ version.version_number }}? A versão entra em vigor na data escolhida e substitui a anterior.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="effective_from">Data de vigência (hoje = imediata)</label>
+    <input type="date" id="effective_from" name="effective_from" value="{{ today.isoformat() }}" required>
+    <div class="actions"><button type="submit">Publicar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card" style="overflow-x:auto">
+  <h2>Diff contra a versão vigente
+    {% if current %}(v{{ current.version_number }} → v{{ version.version_number }}
+      · <span style="color: var(--green)">+{{ stats.added }}</span>
+      / <span style="color: var(--red)">−{{ stats.removed }}</span>){% endif %}
+  </h2>
+  {% if rows %}
+  <table class="diff">
+    {% for row in rows %}
+    <tr class="{{ row.kind }}">
+      <td class="lineno">{{ row.left_no or '' }}</td>
+      <td class="left" style="width:50%">{{ row.left }}</td>
+      <td class="lineno">{{ row.right_no or '' }}</td>
+      <td class="right" style="width:50%">{{ row.right }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Primeira versão da política — sem versão vigente para comparar.</p>
+  <div class="md-body">{{ version.body_md|markdown|safe }}</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Comentários da revisão</h2>
+  {% for c in comments %}
+  <div class="comment {% if c.resolved_at %}resolved{% endif %}">
+    <div class="meta">{{ c.author.display_name if c.author }} · {{ c.created_at.strftime('%d/%m/%Y %H:%M') }}{% if c.anchor %} · em “{{ c.anchor }}”{% endif %}</div>
+    <div class="md-body">{{ c.body_md|markdown|safe }}</div>
+  </div>
+  {% else %}
+  <p class="help">Nenhum comentário.</p>
+  {% endfor %}
+</div>
+{% endblock %}

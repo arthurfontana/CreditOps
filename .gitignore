@@ -1,0 +1,31 @@
+# runtime (mantém apenas a estrutura via .gitkeep)
+data/*
+!data/.gitkeep
+!data/attachments/
+data/attachments/*
+!data/attachments/.gitkeep
+!data/exports/
+data/exports/*
+!data/exports/.gitkeep
+logs/*
+!logs/.gitkeep
+backups/
+
+# segredos e ambiente
+.env
+config/settings.toml
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# editores
+.idea/
+.vscode/

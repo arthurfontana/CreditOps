@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">{{ app_name }}</a>
+  {% if user %}
+  <form class="topsearch" action="/search" method="get">
+    <input type="search" name="q" placeholder="Buscar políticas…" aria-label="Buscar políticas">
+  </form>
+  <nav>
+    <a href="/policies">Catálogo</a>
+    {% if user.role == 'admin' or user.is_auditor %}<a href="/audit">Auditoria</a>{% endif %}
+    {% if user.role == 'admin' %}<a href="/admin/users">Administração</a>{% endif %}
+    <span class="whoami">{{ user.display_name }} · {{ role_label(user.role) }}</span>
+    <form action="/logout" method="post" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="linklike">Sair</button>
+    </form>
+  </nav>
+  {% endif %}
+</header>
+<main>
+  {% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="footer">CreditOps — governança de políticas de crédito</footer>
+</body>
+</html>

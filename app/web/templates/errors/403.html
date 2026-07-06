@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Acesso negado — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="card login-box">
+  <h1>Acesso negado (403)</h1>
+  <p>{{ detail or 'Você não tem o papel necessário para esta operação.' }}</p>
+  <p><a href="/">Voltar ao início</a></p>
+</div>
+{% endblock %}

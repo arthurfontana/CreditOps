@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs">Administração → {{ label }}</div>
+<h1>{{ label }}</h1>
+<div class="grid2">
+  <div class="card">
+    <table>
+      <thead><tr><th>Nome</th><th>Código</th><th>Ativo</th><th></th></tr></thead>
+      <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.code }}</td>
+          <td>{{ 'sim' if item.is_active else 'não' }}</td>
+          <td>
+            <form class="inline" method="post" action="/admin/catalogs/{{ kind }}/{{ item.id }}/toggle">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn-sm btn-secondary">{{ 'Desativar' if item.is_active else 'Ativar' }}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">Nenhum item cadastrado.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Novo item</h2>
+    <form class="stack" method="post" action="/admin/catalogs/{{ kind }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="name">Nome</label>
+      <input type="text" id="name" name="name" required>
+      <label for="code">Código (curto, ex.: CRD)</label>
+      <input type="text" id="code" name="code" required maxlength="10">
+      <div class="actions"><button type="submit">Criar</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

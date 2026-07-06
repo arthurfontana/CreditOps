@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Entrar — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="card login-box">
+  <h1>{{ app_name }}</h1>
+  {% if msg %}<div class="flash flash-error">{{ msg }}</div>{% endif %}
+  <form class="stack" method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="username">Usuário ou e-mail</label>
+    <input type="text" id="username" name="username" required autofocus>
+    <label for="password">Senha</label>
+    <input type="password" id="password" name="password" required>
+    <div class="actions"><button type="submit">Entrar</button></div>
+  </form>
+</div>
+{% endblock %}

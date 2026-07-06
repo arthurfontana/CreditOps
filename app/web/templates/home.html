@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Início — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Minha fila</h1>
+
+<div class="kpis">
+  {% if my_drafts is defined %}<div class="kpi"><div class="n">{{ my_drafts|length }}</div><div class="l">meus rascunhos</div></div>{% endif %}
+  {% if to_review is defined %}<div class="kpi"><div class="n">{{ to_review|length }}</div><div class="l">a revisar</div></div>{% endif %}
+  {% if to_approve is defined %}<div class="kpi"><div class="n">{{ to_approve|length }}</div><div class="l">a aprovar</div></div>{% endif %}
+  {% if to_publish is defined %}<div class="kpi"><div class="n">{{ to_publish|length }}</div><div class="l">a publicar</div></div>{% endif %}
+</div>
+
+{% macro version_row(v) %}
+  <li>
+    <span class="vnum">v{{ v.version_number }}</span>
+    <a href="/versions/{{ v.id }}">{{ v.policy.code }} — {{ v.policy.title }}</a>
+    <span class="badge {{ v.status }}">{{ status_label(v.status) }}</span>
+  </li>
+{% endmacro %}
+
+{% if my_drafts is defined and my_drafts %}
+<div class="card"><h2>Meus rascunhos</h2><ul class="timeline">
+  {% for v in my_drafts %}{{ version_row(v) }}{% endfor %}
+</ul></div>
+{% endif %}
+
+{% if to_review is defined and to_review %}
+<div class="card"><h2>Aguardando revisão</h2><ul class="timeline">
+  {% for v in to_review %}{{ version_row(v) }}{% endfor %}
+</ul></div>
+{% endif %}
+
+{% if to_approve is defined and to_approve %}
+<div class="card"><h2>Aguardando aprovação</h2><ul class="timeline">
+  {% for v in to_approve %}
+  <li>
+    <span class="vnum">v{{ v.version_number }}</span>
+    <a href="/versions/{{ v.id }}/review">{{ v.policy.code }} — {{ v.policy.title }}</a>
+    <span class="badge {{ v.status }}">{{ status_label(v.status) }}</span>
+  </li>
+  {% endfor %}
+</ul></div>
+{% endif %}
+
+{% if to_publish is defined and to_publish %}
+<div class="card"><h2>Aprovadas — aguardando publicação</h2><ul class="timeline">
+  {% for v in to_publish %}{{ version_row(v) }}{% endfor %}
+</ul></div>
+{% endif %}
+
+<div class="card">
+  <h2>Entraram em vigor nos últimos 30 dias</h2>
+  {% if recently_effective %}
+  <ul class="timeline">
+    {% for v in recently_effective %}
+    <li><span class="vnum">v{{ v.version_number }}</span>
+      <a href="/policies/{{ v.policy_id }}">{{ v.policy.code }} — {{ v.policy.title }}</a>
+      <span class="badge effective">Em vigor</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="help">Nenhuma publicação recente.</p>{% endif %}
+</div>
+
+<div class="actions">
+  <a class="btn btn-secondary" href="/policies">Ver catálogo completo</a>
+  {% if user.role in ('author', 'admin') %}<a class="btn" href="/policies/new">Nova política</a>{% endif %}
+</div>
+{% endblock %}

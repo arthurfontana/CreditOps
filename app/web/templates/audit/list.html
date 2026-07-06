@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Auditoria — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs">Auditoria</div>
+<h1>Trilha de auditoria</h1>
+
+<form class="filters" method="get" action="/audit">
+  <input type="text" name="action" value="{{ query.get('action', '') }}" placeholder="ação (ex.: version.published)">
+  <select name="actor_id" aria-label="Ator">
+    <option value="">Todos os atores</option>
+    {% for a in actors %}<option value="{{ a.id }}" {% if query.get('actor_id') == a.id %}selected{% endif %}>{{ a.display_name }}</option>{% endfor %}
+  </select>
+  <input type="text" name="entity_type" value="{{ query.get('entity_type', '') }}" placeholder="entidade (ex.: policy_version)">
+  <input type="date" name="date_from" value="{{ query.get('date_from', '') }}" aria-label="De">
+  <input type="date" name="date_to" value="{{ query.get('date_to', '') }}" aria-label="Até">
+  <button type="submit" class="btn-sm">Filtrar</button>
+  <a class="btn btn-secondary btn-sm" href="/audit/export.csv?{{ request.query_params }}">Exportar CSV</a>
+</form>
+
+<table>
+  <thead><tr><th>#</th><th>Data/hora</th><th>Ator</th><th>Ação</th><th>Entidade</th><th>Detalhes</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr>
+      <td>{{ e.id }}</td>
+      <td>{{ e.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+      <td>{{ e.actor.display_name if e.actor else 'sistema' }}</td>
+      <td>{{ e.action }}</td>
+      <td>{{ e.entity_type }}{% if e.entity_id %} · {{ e.entity_id[:8] }}…{% endif %}</td>
+      <td><code style="font-size:.75rem">{{ e.payload or '' }}</code></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6">Nenhum evento encontrado.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="actions">
+  {% if page > 1 %}<a class="btn btn-secondary btn-sm" href="/audit?page={{ page - 1 }}">← Anterior</a>{% endif %}
+  {% if has_next %}<a class="btn btn-secondary btn-sm" href="/audit?page={{ page + 1 }}">Próxima →</a>{% endif %}
+</div>
+{% endblock %}

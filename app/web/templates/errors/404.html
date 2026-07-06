@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Não encontrado — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="card login-box">
+  <h1>Não encontrado (404)</h1>
+  <p>{{ detail or 'O recurso solicitado não existe.' }}</p>
+  <p><a href="/">Voltar ao início</a></p>
+</div>
+{% endblock %}
