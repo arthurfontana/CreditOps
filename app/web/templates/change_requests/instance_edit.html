@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ instance.cinema.name }} — {{ cr.code }} — {{ app_name }}{% endblock %}
+{% block head %}
+<script src="/static/js/cinema-grid.js" defer></script>
+{% endblock %}
+{% block content %}
+<div class="breadcrumbs">
+  <a href="/change-requests">Demandas</a> →
+  <a href="/change-requests/{{ cr.id }}">{{ cr.code }}</a> → {{ instance.cinema.name }}
+</div>
+<h1>{{ instance.cinema.name }}
+  <span class="badge draft">{{ 'Elegibilidade' if instance.cinema.cinema_type == 'eligibility' else 'Oferta' }}</span>
+</h1>
+<p class="help">
+  Eixos: {{ instance.cinema.row_variable.label }} × {{ instance.cinema.col_variable.label }} ·
+  {% if instance.source_version %}origem: v{{ instance.source_version.version_number }} da biblioteca{% else %}matriz nova (biblioteca sem versão vigente){% endif %}
+  {% if instance.cinema.cinema_type == 'eligibility' %}
+  · Clique numa casela para alternar ✓/✗; clique no cabeçalho aplica à linha/coluna inteira.
+  {% else %}
+  · Escolha um valor na paleta e clique nas caselas para pintar; cabeçalho aplica à linha/coluna inteira.
+  {% endif %}
+</p>
+
+{% if stale %}
+<div class="stale-warn">⚠ Base defasada: a biblioteca já está na v{{ instance.cinema.current_version.version_number }}.
+  <form class="inline" method="post" action="/cinema-instances/{{ instance.id }}/rebase">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn-sm btn-secondary">↺ Re-basear na versão vigente</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" action="/cinema-instances/{{ instance.id }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="cells_json" id="cells_json">
+    <script type="application/json" id="grid-config">{{ grid_config|safe }}</script>
+    <div class="cinema-grid" data-config="#grid-config" data-input="#cells_json">
+      <div class="cg-palette"></div>
+      <div class="cg-table cinema-matrix-wrap"></div>
+      <p class="cg-changed-count"></p>
+    </div>
+    <label for="notes">Observações (opcional)</label>
+    <input type="text" id="notes" name="notes" value="{{ instance.notes or '' }}"
+           placeholder="ex.: cortes válidos até 30/06, grupos fora da tabela seguem AS IS">
+    <div class="actions">
+      <button type="submit">Salvar caselas</button>
+      <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}">Voltar à demanda</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

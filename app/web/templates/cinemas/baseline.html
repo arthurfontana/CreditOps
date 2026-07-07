@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Carga manual — {{ cinema.name }} — {{ app_name }}{% endblock %}
+{% block head %}
+<script src="/static/js/cinema-grid.js" defer></script>
+{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/cinemas">Biblioteca</a> → <a href="/cinemas/{{ cinema.id }}">{{ cinema.name }}</a> → Carga manual</div>
+<h1>Carga manual (AS IS) — {{ cinema.name }}</h1>
+<p class="help">Grava uma nova versão diretamente na biblioteca (auditada como carga manual). Use para semear
+  a matriz que está em produção; a evolução normal acontece pela vigência das demandas.</p>
+
+<div class="card">
+  <form method="post" action="/cinemas/{{ cinema.id }}/baseline" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="cells_json" id="cells_json">
+    <script type="application/json" id="grid-config">{{ grid_config|safe }}</script>
+    <div class="cinema-grid" data-config="#grid-config" data-input="#cells_json">
+      <div class="cg-palette"></div>
+      <div class="cg-table cinema-matrix-wrap"></div>
+      <p class="cg-changed-count"></p>
+    </div>
+    <div class="actions">
+      <button type="submit">Gravar nova versão</button>
+      <a class="btn btn-secondary" href="/cinemas/{{ cinema.id }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

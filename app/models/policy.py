@@ -103,6 +103,7 @@ class PolicyVersion(Base):
     version_number: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default=VersionStatus.DRAFT)
     body_md: Mapped[str] = mapped_column(Text, default="")
+    body_html: Mapped[str] = mapped_column(Text, default="")  # WYSIWYG (sanitizado); vence o md
     structured_fields: Mapped[str | None] = mapped_column(Text)  # JSON (campos por tipo, v1)
     change_summary: Mapped[str | None] = mapped_column(Text)  # obrigatório para submeter
     expected_impact: Mapped[str | None] = mapped_column(Text)  # obrigatório para submeter

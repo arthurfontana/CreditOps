@@ -138,7 +138,8 @@
   </table>
   {% else %}
   <p class="help">Primeira versão da política — sem versão vigente para comparar.</p>
-  <div class="md-body">{{ version.body_md|markdown|safe }}</div>
+  {% if version.body_html %}<div class="rich-body">{{ version.body_html|safe }}</div>
+  {% else %}<div class="md-body">{{ version.body_md|markdown|safe }}</div>{% endif %}
   {% endif %}
 </div>
 

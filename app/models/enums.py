@@ -103,3 +103,20 @@ class ReferenceTargetType(StrEnum):
 
 # Janelas de observação do impacto (dias após a vigência)
 IMPACT_WINDOWS = (30, 60, 90)
+
+
+class CinemaType(StrEnum):
+    """Tipo de cineminha (espelha o simulador): elegibilidade ou oferta."""
+
+    ELIGIBILITY = "eligibility"  # casela 0/1 (não elegível / elegível)
+    OFFER = "offer"  # casela com valor numérico (corte/oferta)
+
+
+class CinemaVersionOrigin(StrEnum):
+    MANUAL = "manual"  # carga inicial/AS IS feita direto na biblioteca
+    PROMOTION = "promotion"  # retroalimentação: demanda cuja política entrou em vigor
+
+
+class CinemaInstanceStatus(StrEnum):
+    DRAFT = "draft"  # em edição dentro da demanda
+    PROMOTED = "promoted"  # já retroalimentou a biblioteca

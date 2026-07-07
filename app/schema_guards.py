@@ -15,7 +15,7 @@ TRIGGERS: list[str] = [
     # versão fora de rascunho: conteúdo imutável
     """
     CREATE TRIGGER trg_policy_version_immutable_update
-    BEFORE UPDATE OF body_md, structured_fields, change_summary, expected_impact
+    BEFORE UPDATE OF body_md, body_html, structured_fields, change_summary, expected_impact
     ON policy_version
     WHEN OLD.status != 'draft'
     BEGIN

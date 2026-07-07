@@ -82,6 +82,7 @@ def _version_payload(db: Session, policy: Policy, version: PolicyVersion) -> dic
             "number": version.version_number,
             "status": version.status,
             "body_md": version.body_md,
+            "body_html": version.body_html or "",
             "structured_fields": (
                 json.loads(version.structured_fields) if version.structured_fields else None
             ),

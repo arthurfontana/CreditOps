@@ -1,0 +1,38 @@
+{# Macros compartilhadas: matriz de cineminha (leitura) e corpo rico. #}
+
+{% macro cinema_matrix(view, row_label, col_label) %}
+<div class="cinema-matrix-wrap">
+  <table class="cinema-matrix">
+    <tr>
+      <th>{{ row_label }} \ {{ col_label }}</th>
+      {% for c in view.col_domain %}<th>{{ c }}</th>{% endfor %}
+    </tr>
+    {% for r in view.row_domain %}
+    {% set i = loop.index0 %}
+    <tr>
+      <th>{{ r }}</th>
+      {% for c in view.col_domain %}
+      {% set j = loop.index0 %}
+      {% set v = view.grid[i][j] %}
+      {% if view.cinema_type == 'eligibility' %}
+      <td class="{{ 'changed' if view.changed[i][j] }}"
+          style="background:{{ '#63be7b' if v >= 1 else '#f8696b' }};color:#fff">{{ '✓' if v >= 1 else '✗' }}</td>
+      {% else %}
+      {% set t = (v / view.max_value) if view.max_value else 0 %}
+      <td class="{{ 'changed' if view.changed[i][j] }}"
+          style="background:{{ '#f8696b' if v <= 0 else ('#63be7b' if t >= 0.66 else ('#ffeb84' if t >= 0.33 else '#f8b76b')) }}">{{ v }}</td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% if view.changed_count %}
+<p class="cinema-legend">🔷 {{ view.changed_count }} casela(s) com contorno azul = alteradas em relação à origem na biblioteca.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro rich_body(html, md) %}
+{% if html %}<div class="rich-body">{{ html|safe }}</div>
+{% elif md %}<div class="md-body">{{ md|markdown|safe }}</div>{% endif %}
+{% endmacro %}

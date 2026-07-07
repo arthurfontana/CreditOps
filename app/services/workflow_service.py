@@ -494,6 +494,10 @@ def make_effective(db: Session, version_id: str) -> PolicyVersion:
                 db, None, "change_request.done", "change_request", change_request.id,
                 {"code": change_request.code, "version_id": version.id},
             )
+        # retroalimenta a biblioteca de cineminhas na mesma transação da vigência
+        from app.services import cinema_service
+
+        cinema_service.promote_for_change_request(db, version.change_request_id, version.id)
 
     audit_service.record(
         db, None, "version.effective", "policy_version", version.id,

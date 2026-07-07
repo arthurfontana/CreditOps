@@ -93,3 +93,40 @@ pre.unified { background: #fff; border: 1px solid var(--line); border-radius: 6p
 .help { color: var(--muted); font-size: .84rem; }
 mark { background: #ffe9a8; }
 .login-box { max-width: 380px; margin: 4rem auto; }
+
+/* ── Editor WYSIWYG (Quill) ─────────────────────────────────────────────── */
+.rich-editor { background: #fff; min-height: 260px; }
+.rich-editor .ql-editor { min-height: 220px; font: 15px/1.6 system-ui, "Segoe UI", Arial, sans-serif; }
+.editor-tall .ql-editor { min-height: 420px; }
+.ql-toolbar.ql-snow { border-radius: 5px 5px 0 0; border-color: var(--line); background: #fafbfc; }
+.ql-container.ql-snow { border-radius: 0 0 5px 5px; border-color: var(--line); }
+.rich-body { line-height: 1.65; }
+.rich-body img { max-width: 100%; }
+.rich-body table, .rich-body td, .rich-body th { border: 1px solid var(--line); }
+.rich-body blockquote { border-left: 3px solid var(--line); margin-left: 0; padding-left: 1rem; color: var(--muted); }
+
+/* ── Matriz do cineminha ────────────────────────────────────────────────── */
+.cinema-matrix-wrap { overflow-x: auto; }
+.cinema-matrix { border-collapse: collapse; width: auto; font-size: .78rem; }
+.cinema-matrix th { background: #eef2ff; color: #3730a3; text-transform: none; letter-spacing: 0;
+  padding: .25rem .45rem; border: 1px solid #c7d2fe; text-align: center; position: sticky; }
+.cinema-matrix td { padding: .25rem .45rem; border: 1px solid rgba(255,255,255,.65);
+  text-align: center; font-weight: 600; min-width: 2.2rem; user-select: none; }
+.cinema-matrix td.cg-changed, .cinema-matrix td.changed { outline: 2.5px solid #1d4ed8; outline-offset: -2.5px; }
+.cg-palette { display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; margin: .5rem 0; }
+.cg-palette-label { font-size: .82rem; color: var(--muted); }
+.cg-swatch { background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: .2rem .6rem; }
+.cg-swatch.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.cg-new-value { width: 110px !important; }
+.cg-changed-count { font-size: .82rem; color: var(--blue); font-weight: 600; }
+.cinema-legend { font-size: .8rem; color: var(--muted); margin-top: .4rem; }
+.stale-warn { background: #fdf3e0; border: 1px solid #ecd3a3; color: #6d4a04; padding: .4rem .7rem; border-radius: 6px; font-size: .85rem; margin: .4rem 0; }
+
+/* ── Impressão (visão de impressão → PDF pelo navegador) ────────────────── */
+@media print {
+  .topbar, .footer, .actions, .no-print, form { display: none !important; }
+  main { max-width: none; margin: 0; }
+  .card { border: none; padding: 0; margin-bottom: .8rem; }
+  body { background: #fff; }
+  .cinema-matrix td, .cinema-matrix th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

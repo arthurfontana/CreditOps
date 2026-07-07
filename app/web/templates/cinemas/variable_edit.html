@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ variable.name }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/cinemas">Biblioteca</a> → <a href="/variables">Variáveis</a> → {{ variable.name }}</div>
+<h1>Editando {{ variable.name }}</h1>
+<p class="help">Alterações no domínio valem para matrizes e instâncias criadas daqui em diante —
+  versões existentes na biblioteca não são tocadas.</p>
+
+<div class="card">
+  <form class="stack" method="post" action="/variables/{{ variable.id }}/edit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="label">Rótulo</label>
+    <input type="text" id="label" name="label" value="{{ variable.label }}">
+    <label for="description">Descrição (opcional)</label>
+    <input type="text" id="description" name="description" value="{{ variable.description or '' }}">
+    <label for="domain">Domínio padrão (na ordem)</label>
+    <textarea id="domain" name="domain" required>{{ variable.domain_list|join(', ') }}</textarea>
+    <label><input type="checkbox" name="is_ordinal" value="1" {% if variable.is_ordinal %}checked{% endif %} style="width:auto"> Ordinal</label>
+    <label><input type="checkbox" name="is_active" value="1" {% if variable.is_active %}checked{% endif %} style="width:auto"> Ativa</label>
+    <div class="actions">
+      <button type="submit">Salvar</button>
+      <a class="btn btn-secondary" href="/variables">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

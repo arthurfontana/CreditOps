@@ -72,7 +72,9 @@ def export_version_md(db: Session, version: PolicyVersion) -> str:
         lines.append(f"vigente_de: {publication.effective_from.isoformat()}")
         if publication.effective_until:
             lines.append(f"vigente_ate: {publication.effective_until.isoformat()}")
-    lines += ["---", "", version.body_md]
+    from app.services.richtext import body_text
+
+    lines += ["---", "", body_text(version.body_html, version.body_md)]
     return "\n".join(lines)
 
 
@@ -97,6 +99,7 @@ def export_policy_json(db: Session, policy: Policy) -> dict:
             "is_rollback": v.is_rollback,
             "content_hash": v.content_hash,
             "body_md": v.body_md,
+            "body_html": v.body_html or "",
             "approvals": [
                 {
                     "decision": a.decision,

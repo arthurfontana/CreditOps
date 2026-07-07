@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Biblioteca de Cineminhas — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Biblioteca de Cineminhas</h1>
+<p class="help">Matrizes de política versionadas. A versão vigente evolui pela vigência das demandas
+  (retroalimentação) — ou por carga manual do AS IS de produção.</p>
+
+<div class="actions">
+  {% if user.role in ('author', 'approver', 'admin') %}
+  <a class="btn" href="/cinemas/new">＋ Novo cineminha</a>
+  {% endif %}
+  <a class="btn btn-secondary" href="/variables">Catálogo de variáveis</a>
+</div>
+
+<div class="card">
+  {% if cinemas %}
+  <table>
+    <tr><th>Nome</th><th>Tipo</th><th>Eixos</th><th>Versão vigente</th><th>Última atualização</th></tr>
+    {% for c in cinemas %}
+    <tr>
+      <td><a href="/cinemas/{{ c.id }}">{{ c.name }}</a></td>
+      <td>{{ 'Elegibilidade' if c.cinema_type == 'eligibility' else 'Oferta' }}</td>
+      <td>{{ c.row_variable.label }} × {{ c.col_variable.label }}</td>
+      <td>{% if c.current_version %}v{{ c.current_version.version_number }}{% else %}<span class="help">sem versão</span>{% endif %}</td>
+      <td>{% if c.current_version %}{{ c.current_version.created_at.strftime('%d/%m/%Y') }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Biblioteca vazia — crie o primeiro cineminha e carregue a matriz de produção (AS IS).</p>
+  {% endif %}
+</div>
+{% endblock %}

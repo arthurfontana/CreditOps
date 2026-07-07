@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}{{ cr.code }} (impressão) — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="actions no-print">
+  <button type="button" onclick="window.print()">🖨 Imprimir / salvar como PDF</button>
+  <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}">Voltar à demanda</a>
+</div>
+
+<h1>Solicitação de Mudança em Políticas</h1>
+<h2>{{ cr.code }} — {{ cr.title }}</h2>
+
+<div class="card">
+  <table>
+    <tr><th style="width:180px">Solicitante</th><td>{{ cr.requester.display_name if cr.requester }}</td></tr>
+    <tr><th>Área</th><td>{{ cr.area.name if cr.area }}</td></tr>
+    <tr><th>Prioridade</th><td>{{ priorities[cr.priority] if cr.priority in priorities else cr.priority }}</td></tr>
+    <tr><th>Status</th><td>{{ cr_statuses[cr.status] if cr.status in cr_statuses else cr.status }}</td></tr>
+    <tr><th>Aberta em</th><td>{{ cr.created_at.strftime('%d/%m/%Y') }}</td></tr>
+    {% if cr.closed_at %}<tr><th>Encerrada em</th><td>{{ cr.closed_at.strftime('%d/%m/%Y') }}</td></tr>{% endif %}
+  </table>
+</div>
+
+{% if history %}
+<div class="card">
+  <h2>Registro de alterações</h2>
+  <table>
+    <tr><th>Data</th><th>Ação</th><th>Autor</th></tr>
+    {% for h in history %}
+    <tr>
+      <td>{{ h.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ audit_labels.get(h.action, h.action) }}</td>
+      <td>{{ h.actor.display_name if h.actor else 'sistema' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if cr.description_html or cr.description_md %}
+<div class="card"><h2>Descrição</h2>{{ macros.rich_body(cr.description_html, cr.description_md) }}</div>
+{% endif %}
+
+{% for item in instances %}
+<div class="card">
+  <h2>{{ item.instance.cinema.name }}</h2>
+  <p class="help">
+    {{ 'Elegibilidade' if item.instance.cinema.cinema_type == 'eligibility' else 'Oferta' }} ·
+    {% if item.instance.source_version %}origem: v{{ item.instance.source_version.version_number }} da biblioteca{% else %}matriz nova{% endif %}
+  </p>
+  {{ macros.cinema_matrix(item.view, item.instance.cinema.row_variable.label, item.instance.cinema.col_variable.label) }}
+  {% if item.instance.notes %}<p class="help">Observações: {{ item.instance.notes }}</p>{% endif %}
+</div>
+{% endfor %}
+
+{% if cr.resolution %}
+<div class="card"><h2>Resolução</h2><p>{{ cr.resolution }}</p></div>
+{% endif %}
+{% endblock %}

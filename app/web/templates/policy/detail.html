@@ -65,7 +65,8 @@
     Escopo: {{ publication.pilot_description }}
     <br>Promoção a produção, ajuste ou encerramento seguem o fluxo normal de aprovação.</div>
   {% endif %}
-  <div class="md-body">{{ policy.current_version.body_md|markdown|safe }}</div>
+  {% if policy.current_version.body_html %}<div class="rich-body">{{ policy.current_version.body_html|safe }}</div>
+  {% else %}<div class="md-body">{{ policy.current_version.body_md|markdown|safe }}</div>{% endif %}
   <div class="actions">
     {% if receipt %}
       <span class="badge effective">Ciência registrada em {{ receipt.acknowledged_at.strftime('%d/%m/%Y %H:%M') }}</span>

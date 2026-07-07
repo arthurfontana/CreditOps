@@ -3,6 +3,7 @@
 from app.db import Base
 from app.models.audit import AuditLog, Notification, Setting
 from app.models.change import ChangeRequest, ImpactMetric, ImplementationRef, Indicator
+from app.models.cinema import Cinema, CinemaInstance, CinemaVersion, DecisionVariable
 from app.models.collaboration import Attachment, Comment, ImpactRecord
 from app.models.enums import (
     IMPACT_WINDOWS,
@@ -10,6 +11,9 @@ from app.models.enums import (
     ApprovalDecision,
     ChangeRequestPriority,
     ChangeRequestStatus,
+    CinemaInstanceStatus,
+    CinemaType,
+    CinemaVersionOrigin,
     IndicatorDirection,
     PolicyLifecycle,
     PolicyType,
@@ -40,6 +44,13 @@ __all__ = [
     "Comment",
     "ImpactRecord",
     "ChangeRequest",
+    "Cinema",
+    "CinemaInstance",
+    "CinemaInstanceStatus",
+    "CinemaType",
+    "CinemaVersion",
+    "CinemaVersionOrigin",
+    "DecisionVariable",
     "Indicator",
     "ImpactMetric",
     "ImplementationRef",
