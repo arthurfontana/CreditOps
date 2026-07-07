@@ -13,8 +13,11 @@ from app.db import get_db
 from app.models import Role, User
 from app.services import (
     comment_service,
+    delegation_service,
     diff_service,
+    impact_service,
     policy_service,
+    release_service,
     search_service,
     version_service,
     workflow_service,
@@ -94,11 +97,19 @@ def review_screen(
     current = policy.current_version
     rows = diff_service.side_by_side(current, version) if current else None
     stats = diff_service.stats(current, version) if current else None
+    field_changes = diff_service.field_diff(current, version) if current else []
     comments = comment_service.list_for_version(db, version.id)
+    approved_levels, required_levels = workflow_service.approval_progress(db, version)
+    delegations = delegation_service.active_delegations_to(db, user.id)
+    releases = release_service.open_releases(db)
+    metrics = impact_service.metrics_for_version(db, version.id)
     return render(
         request, "version/review.html", user,
         version=version, policy=policy, current=current,
-        rows=rows, stats=stats, comments=comments, msg=msg, today=date.today(),
+        rows=rows, stats=stats, field_changes=field_changes,
+        comments=comments, msg=msg, today=date.today(),
+        approved_levels=approved_levels, required_levels=required_levels,
+        delegations=delegations, releases=releases, metrics=metrics,
     )
 
 
@@ -107,15 +118,24 @@ def approve(
     request: Request,
     version_id: str,
     justification: str = Form(""),
+    on_behalf_of: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.APPROVER)),
     _csrf: None = Depends(csrf_protect),
 ):
     try:
-        workflow_service.approve(db, user, version_id, justification)
+        version = workflow_service.approve(
+            db, user, version_id, justification, on_behalf_of=on_behalf_of or None
+        )
     except DomainError as exc:
         return _back(version_id, str(exc))
     db.commit()
+    done, required = workflow_service.approval_progress(db, version)
+    if version.status == "in_approval":
+        return _back(
+            version_id,
+            f"N%C3%ADvel+{done}+de+{required}+aprovado+—+aguardando+pr%C3%B3ximo+n%C3%ADvel",
+        )
     return _back(version_id, "Vers%C3%A3o+aprovada")
 
 
@@ -124,12 +144,15 @@ def reject(
     request: Request,
     version_id: str,
     justification: str = Form(""),
+    on_behalf_of: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.APPROVER)),
     _csrf: None = Depends(csrf_protect),
 ):
     try:
-        workflow_service.reject(db, user, version_id, justification)
+        workflow_service.reject(
+            db, user, version_id, justification, on_behalf_of=on_behalf_of or None
+        )
     except DomainError as exc:
         return _back(version_id, str(exc))
     db.commit()
@@ -141,6 +164,7 @@ def publish(
     request: Request,
     version_id: str,
     effective_from: str = Form(...),
+    release_id: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.APPROVER)),
     _csrf: None = Depends(csrf_protect),
@@ -150,7 +174,9 @@ def publish(
     except ValueError:
         return _back(version_id, "Data+de+vig%C3%AAncia+inv%C3%A1lida")
     try:
-        version = workflow_service.publish(db, user, version_id, effective)
+        version = workflow_service.publish(
+            db, user, version_id, effective, release_id=release_id or None
+        )
     except DomainError as exc:
         return _back(version_id, str(exc))
     search_service.reindex_policy(db, version.policy_id)

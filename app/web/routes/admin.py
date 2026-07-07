@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import require_role
 from app.db import get_db
-from app.models import Area, Product, Role, Segment, Tag, User
-from app.services import audit_service, user_service
+from app.models import Area, IndicatorDirection, PolicyType, Product, Role, Segment, Tag, User
+from app.services import approval_rules, audit_service, indicator_service, user_service
 from app.services.errors import DomainError, NotFound
 from app.web.csrf import csrf_protect
 from app.web.templating import render
@@ -214,6 +214,95 @@ def toggle_catalog_item(
     )
     db.commit()
     return RedirectResponse(f"/admin/catalogs/{kind}", status_code=303)
+
+
+# ── indicadores (v1) ────────────────────────────────────────────────────────
+
+
+@router.get("/indicators")
+def list_indicators(
+    request: Request,
+    msg: str = "",
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+):
+    indicators = indicator_service.list_all(db)
+    return render(
+        request, "admin/indicators.html", user,
+        indicators=indicators, directions=[d.value for d in IndicatorDirection], msg=msg,
+    )
+
+
+@router.post("/indicators")
+def create_indicator(
+    request: Request,
+    code: str = Form(...),
+    name: str = Form(...),
+    unit: str = Form(""),
+    desired_direction: str = Form("contextual"),
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+    _csrf: None = Depends(csrf_protect),
+):
+    try:
+        indicator_service.create(
+            db, user, code=code, name=name, unit=unit, desired_direction=desired_direction
+        )
+    except DomainError as exc:
+        return RedirectResponse(f"/admin/indicators?msg={exc}", status_code=303)
+    db.commit()
+    return RedirectResponse("/admin/indicators?msg=Indicador+criado", status_code=303)
+
+
+@router.post("/indicators/{indicator_id}/toggle")
+def toggle_indicator(
+    request: Request,
+    indicator_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+    _csrf: None = Depends(csrf_protect),
+):
+    try:
+        indicator_service.toggle(db, user, indicator_id)
+    except DomainError as exc:
+        return RedirectResponse(f"/admin/indicators?msg={exc}", status_code=303)
+    db.commit()
+    return RedirectResponse("/admin/indicators", status_code=303)
+
+
+# ── níveis de aprovação por tipo (v1) ───────────────────────────────────────
+
+
+@router.get("/approval-rules")
+def list_approval_rules(
+    request: Request,
+    msg: str = "",
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+):
+    rules = approval_rules.list_rules(db)
+    return render(
+        request, "admin/approval_rules.html", user,
+        rules=rules, policy_types=[t.value for t in PolicyType],
+        max_levels=approval_rules.MAX_LEVELS, msg=msg,
+    )
+
+
+@router.post("/approval-rules")
+def set_approval_rule(
+    request: Request,
+    policy_type: str = Form(...),
+    required_levels: int = Form(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+    _csrf: None = Depends(csrf_protect),
+):
+    try:
+        approval_rules.set_rule(db, user, policy_type, required_levels)
+    except DomainError as exc:
+        return RedirectResponse(f"/admin/approval-rules?msg={exc}", status_code=303)
+    db.commit()
+    return RedirectResponse("/admin/approval-rules?msg=Regra+atualizada", status_code=303)
 
 
 # ── tags ────────────────────────────────────────────────────────────────────

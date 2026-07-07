@@ -14,10 +14,27 @@ app_name = "CreditOps"
 # attachment_max_bytes = 20971520
 # attachment_allowed_extensions = "pdf,docx,xlsx,png,jpg,jpeg,csv,txt,md"
 
-# ── v1+ (pontos de extensão; ignorados no MVP) ──────────────────────────────
-# [plugins]
-# notify_email = false
+# ── v1: plugins ──────────────────────────────────────────────────────────────
+[plugins]
+# Notificações por e-mail (fila persistente + retry). Senha SMTP vai APENAS
+# em variável de ambiente: CREDITOPS_SMTP_PASSWORD.
+notify_email = false
+# smtp_host = "smtp.empresa.com"
+# smtp_port = 587
+# smtp_from = "creditops@empresa.com"
+# smtp_starttls = true
+# smtp_username = ""
+# smtp_timeout_seconds = 10
+# app_base_url = "https://creditops.empresa.com"   # links nos e-mails
 
+# Exportação PDF (sem dependência externa)
+export_pdf = true
+
+# ── v1: dashboard ────────────────────────────────────────────────────────────
+# Política é considerada "parada" após N meses sem revisão
+# stale_policy_months = 12
+
+# ── v2 (pontos de extensão; ignorados na v1) ─────────────────────────────────
 # [ai]
 # provider = "none"             # none | openai | anthropic | gemini | internal
 # model = ""

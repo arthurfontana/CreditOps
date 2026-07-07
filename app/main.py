@@ -23,12 +23,26 @@ from app.services.errors import (
     ValidationFailed,
 )
 from app.web.csrf import CSRFError
-from app.web.routes import admin, audit, auth, exports, home, policies, versions, workflow
+from app.web.routes import (
+    admin,
+    audit,
+    auth,
+    change_requests,
+    dashboard,
+    delegations,
+    exports,
+    home,
+    policies,
+    releases,
+    versions,
+    workflow,
+)
 from app.web.templating import templates
 
 logger = logging.getLogger("creditops")
 
 EFFECTIVENESS_CHECK_SECONDS = 600  # 10 min
+NOTIFICATION_RETRY_SECONDS = 300  # 5 min
 
 
 async def _effectiveness_loop() -> None:
@@ -48,16 +62,38 @@ async def _effectiveness_loop() -> None:
         await asyncio.sleep(EFFECTIVENESS_CHECK_SECONDS)
 
 
+async def _notification_retry_loop() -> None:
+    """Retry da fila de notificações (envios que falharam ficam na fila)."""
+    from app.services import notification_service
+
+    while True:
+        await asyncio.sleep(NOTIFICATION_RETRY_SECONDS)
+        try:
+            db = SessionLocal()
+            try:
+                sent = notification_service.process_queue(db)
+                if sent:
+                    db.commit()
+                    logger.info("notificações reenviadas: %d", sent)
+            finally:
+                db.close()
+        except Exception:  # noqa: BLE001
+            logger.exception("falha no retry de notificações")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
     (settings.data_path / "attachments").mkdir(parents=True, exist_ok=True)
     (settings.data_path / "exports").mkdir(parents=True, exist_ok=True)
-    task = asyncio.create_task(_effectiveness_loop())
+    tasks = [asyncio.create_task(_effectiveness_loop())]
+    if settings.notify_email:
+        tasks.append(asyncio.create_task(_notification_retry_loop()))
     yield
-    task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await task
+    for task in tasks:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 def create_app() -> FastAPI:
@@ -86,6 +122,10 @@ def create_app() -> FastAPI:
     app.include_router(audit.router)
     app.include_router(exports.router)
     app.include_router(admin.router)
+    app.include_router(releases.router)
+    app.include_router(change_requests.router)
+    app.include_router(dashboard.router)
+    app.include_router(delegations.router)
 
     @app.exception_handler(AuthRedirect)
     async def _auth_redirect(request: Request, exc: AuthRedirect):

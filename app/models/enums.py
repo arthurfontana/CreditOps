@@ -59,3 +59,27 @@ class PolicyLifecycle(StrEnum):
 class ApprovalDecision(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+class ChangeRequestPriority(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    REGULATORY = "regulatory"
+
+
+class ChangeRequestStatus(StrEnum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"
+    REJECTED = "rejected"  # rejeição com justificativa — também é decisão registrada
+
+
+class IndicatorDirection(StrEnum):
+    UP = "up"
+    DOWN = "down"
+    CONTEXTUAL = "contextual"
+
+
+# Janelas de observação do impacto (dias após a vigência)
+IMPACT_WINDOWS = (30, 60, 90)

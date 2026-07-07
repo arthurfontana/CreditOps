@@ -4,7 +4,10 @@
 
 ## Estado do projeto
 
-🚀 **MVP implementado** ("Fonte de verdade" — ver [Roadmap](docs/wiki/11-roadmap.md)): catálogo, versões imutáveis, workflow completo de aprovação, publicação com vigência, rollback, trilha de auditoria append-only, busca FTS5, time travel, exportação/dossiê, backup/restore e suíte de testes de invariantes.
+🚀 **v1 implementada** ("Governança para valer" — ver [Roadmap](docs/wiki/11-roadmap.md)), sobre o MVP "Fonte de verdade":
+
+- **MVP**: catálogo, versões imutáveis, workflow completo de aprovação, publicação com vigência, rollback, trilha de auditoria append-only, busca FTS5, time travel, exportação/dossiê, backup/restore e suíte de testes de invariantes.
+- **v1**: notificações por e-mail (plugin SMTP com fila e retry), permissões por área, hash chain na auditoria (`scripts/verify_audit.py`), aprovação multinível por tipo de política, delegação de aprovação, releases (pacotes de publicação), campos estruturados por tipo + diff de campos, demanda de mudança com lead time ponta a ponta, catálogo de indicadores + hipótese × impacto observado (janelas 30/60/90d com cobrança pendente), referência de implementação (motor de decisão), dashboard de governança, importador de legado em lote e exportação PDF (plugin sem dependência externa).
 
 ## Quickstart
 

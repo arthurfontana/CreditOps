@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Releases — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Releases</h1>
+<p class="help">Pacotes de publicação: políticas que foram ao ar juntas (ex.: "Revisão Q3/2026").</p>
+
+{% if user.role in ('approver', 'admin') %}
+<div class="card">
+  <h2>Nova release</h2>
+  <form class="stack" method="post" action="/releases">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="name">Nome</label>
+    <input type="text" id="name" name="name" placeholder="ex.: Revisão trimestral Q3/2026" required>
+    <label for="description">Descrição (opcional)</label>
+    <textarea id="description" name="description"></textarea>
+    <div class="actions"><button type="submit">Criar release</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Todas as releases</h2>
+  {% if releases %}
+  <table>
+    <tr><th>Nome</th><th>Publicações</th><th>Criada em</th><th>Última publicação</th></tr>
+    {% for r in releases %}
+    <tr>
+      <td><a href="/releases/{{ r.id }}">{{ r.name }}</a></td>
+      <td>{{ counts[r.id] }}</td>
+      <td>{{ r.created_at.strftime('%d/%m/%Y') if r.created_at }}</td>
+      <td>{{ r.published_at.strftime('%d/%m/%Y %H:%M') if r.published_at else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma release criada.</p>
+  {% endif %}
+</div>
+{% endblock %}

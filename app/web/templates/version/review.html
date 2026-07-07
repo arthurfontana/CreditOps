@@ -12,9 +12,29 @@
   <div class="card"><h2>Impacto esperado</h2><p>{{ version.expected_impact or '—' }}</p></div>
 </div>
 
+{% if metrics %}
+<div class="card">
+  <h2>Hipóteses por indicador</h2>
+  <table>
+    <tr><th>Indicador</th><th>Janela</th><th>Esperado</th></tr>
+    {% for m in metrics %}
+    <tr><td>{{ m.indicator.name }}</td><td>{{ m.window_days }}d</td><td>{{ m.expected_change }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
 {% if version.status == 'in_approval' and user.role == 'approver' %}
 <div class="card">
-  <h2>Decidir</h2>
+  <h2>Decidir
+    {% if required_levels > 1 %}
+    <span class="badge in_approval">nível {{ approved_levels + 1 }} de {{ required_levels }}</span>
+    {% endif %}
+  </h2>
+  {% if required_levels > 1 %}
+  <p class="help">Este tipo de política exige {{ required_levels }} níveis de aprovação em sequência,
+    cada um por um aprovador diferente. {{ approved_levels }} nível(is) já aprovado(s) nesta rodada.</p>
+  {% endif %}
   {% if version.created_by == user.id %}
     <div class="banner">Você é o autor desta versão — segregação de funções impede sua decisão.</div>
   {% else %}
@@ -24,12 +44,30 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <label for="approve_justification">Observação (opcional)</label>
       <input type="text" id="approve_justification" name="justification">
+      {% if delegations %}
+      <label for="approve_on_behalf">Decidir em nome de (delegação ativa)</label>
+      <select id="approve_on_behalf" name="on_behalf_of">
+        <option value="">— em meu próprio nome —</option>
+        {% for d in delegations %}
+        <option value="{{ d.delegator_id }}">{{ d.delegator.display_name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
       <div class="actions"><button type="submit">Aprovar</button></div>
     </form>
     <form class="stack" method="post" action="/versions/{{ version.id }}/reject">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <label for="reject_justification">Justificativa da rejeição (obrigatória)</label>
       <input type="text" id="reject_justification" name="justification" required>
+      {% if delegations %}
+      <label for="reject_on_behalf">Decidir em nome de (delegação ativa)</label>
+      <select id="reject_on_behalf" name="on_behalf_of">
+        <option value="">— em meu próprio nome —</option>
+        {% for d in delegations %}
+        <option value="{{ d.delegator_id }}">{{ d.delegator.display_name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
       <div class="actions"><button type="submit" class="btn-danger">Rejeitar</button></div>
     </form>
   </div>
@@ -43,8 +81,29 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label for="effective_from">Data de vigência (hoje = imediata)</label>
     <input type="date" id="effective_from" name="effective_from" value="{{ today.isoformat() }}" required>
+    <label for="release_id">Release (opcional — agrupa publicações feitas juntas)</label>
+    <select id="release_id" name="release_id">
+      <option value="">— sem release —</option>
+      {% for r in releases %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+    </select>
     <div class="actions"><button type="submit">Publicar</button></div>
   </form>
+</div>
+{% endif %}
+
+{% if field_changes %}
+<div class="card">
+  <h2>Diff de campos estruturados</h2>
+  <table>
+    <tr><th>Campo</th><th>Antes</th><th>Depois</th></tr>
+    {% for c in field_changes %}
+    <tr class="{{ c.kind }}">
+      <td>{{ c.label }}</td>
+      <td>{{ c.before if c.before is not none else '—' }}</td>
+      <td><strong>{{ c.after if c.after is not none else '—' }}</strong></td>
+    </tr>
+    {% endfor %}
+  </table>
 </div>
 {% endif %}
 

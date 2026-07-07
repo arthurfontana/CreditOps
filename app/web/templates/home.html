@@ -48,6 +48,19 @@
 </ul></div>
 {% endif %}
 
+{% if pending_observations is defined and pending_observations %}
+<div class="card">
+  <h2>Impacto a registrar (janelas vencidas)</h2>
+  <ul class="timeline">
+    {% for p in pending_observations %}
+    <li><span class="vnum">v{{ p.version.version_number }}</span>
+      <a href="/versions/{{ p.version.id }}">{{ p.policy.code }} — {{ p.metric.indicator.name }} ({{ p.metric.window_days }}d)</a>
+      <span class="badge in_approval">desde {{ p.due_since.strftime('%d/%m/%Y') }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 <div class="card">
   <h2>Entraram em vigor nos últimos 30 dias</h2>
   {% if recently_effective %}

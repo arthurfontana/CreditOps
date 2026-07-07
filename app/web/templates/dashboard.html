@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Dashboard de governança</h1>
+
+<div class="kpis">
+  <div class="kpi"><div class="n">{{ o.versions_by_status.get('effective', 0) }}</div><div class="l">políticas em vigor</div></div>
+  <div class="kpi"><div class="n">{{ o.versions_by_status.get('draft', 0) + o.versions_by_status.get('in_review', 0) + o.versions_by_status.get('in_approval', 0) }}</div><div class="l">mudanças em fluxo</div></div>
+  <div class="kpi"><div class="n">{{ o.avg_cycle_days if o.avg_cycle_days is not none else '—' }}</div><div class="l">dias de ciclo médio (submissão→vigência, 90d)</div></div>
+  <div class="kpi"><div class="n">{{ o.avg_lead_time_days if o.avg_lead_time_days is not none else '—' }}</div><div class="l">dias de lead time médio (demanda→vigência)</div></div>
+  <div class="kpi"><div class="n">{{ o.open_change_requests }}</div><div class="l">demandas abertas</div></div>
+  <div class="kpi"><div class="n">{{ o.pending_observations }}</div><div class="l">observações de impacto pendentes</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Versões por status</h2>
+    <table>
+      {% for status, count in o.versions_by_status.items() %}
+      <tr><td><span class="badge {{ status }}">{{ status_label(status) }}</span></td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Publicações por mês (12 meses)</h2>
+    {% if o.publications_by_month %}
+    <table>
+      {% for month, count in o.publications_by_month %}
+      <tr><td>{{ month }}</td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="help">Nenhuma publicação no período.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Políticas sem revisão há mais tempo</h2>
+  {% if o.stale_policies %}
+  <table>
+    <tr><th>Política</th><th>Vigente desde</th><th>Meses sem revisão</th></tr>
+    {% for s in o.stale_policies %}
+    <tr>
+      <td><a href="/policies/{{ s.policy.id }}">{{ s.policy.code }} — {{ s.policy.title }}</a></td>
+      <td>{{ s.effective_since.strftime('%d/%m/%Y') }}</td>
+      <td>{{ s.months }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nenhuma política parada além do limite configurado.</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Cobrança pendente — impacto observado</h2>
+  {% if pending %}
+  <table>
+    <tr><th>Política</th><th>Versão</th><th>Indicador</th><th>Janela</th><th>Vencida desde</th></tr>
+    {% for p in pending %}
+    <tr>
+      <td>{{ p.policy.code }}</td>
+      <td><a href="/versions/{{ p.version.id }}">v{{ p.version.version_number }}</a></td>
+      <td>{{ p.metric.indicator.name }}</td>
+      <td>{{ p.metric.window_days }}d</td>
+      <td>{{ p.due_since.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nenhuma observação pendente. Ciclo em dia.</p>{% endif %}
+</div>
+
+<div class="card" style="overflow-x:auto">
+  <h2>Esperado × observado por indicador</h2>
+  {% if o.outcomes %}
+  <table>
+    <tr><th>Política</th><th>Versão</th><th>Indicador</th><th>Janela</th><th>Esperado</th><th>Observado</th></tr>
+    {% for out in o.outcomes %}
+    <tr>
+      <td>{{ out.policy_code }}</td>
+      <td><a href="/versions/{{ out.version_id }}">v{{ out.version_number }}</a></td>
+      <td>{{ out.indicator_name }}</td>
+      <td>{{ out.window_days }}d</td>
+      <td>{{ out.expected }}</td>
+      <td>{{ out.observed or '⏳ pendente' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nenhuma hipótese estruturada declarada ainda — declare indicadores no rascunho da mudança.</p>{% endif %}
+</div>
+{% endblock %}

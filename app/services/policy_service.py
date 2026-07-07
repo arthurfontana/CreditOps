@@ -81,6 +81,7 @@ def create_policy(
 ) -> Policy:
     """Cria a política e sua versão 1 em rascunho, com corpo do template do tipo."""
     authz.ensure_role(actor, Role.AUTHOR, Role.ADMIN)
+    authz.ensure_area_scope(actor, area_id, action="criar políticas")
     if not title.strip():
         raise ValidationFailed("título é obrigatório")
     if policy_type not in [t.value for t in PolicyType]:
@@ -145,6 +146,7 @@ def update_policy_metadata(
     policy = db.get(Policy, policy_id)
     if policy is None:
         raise NotFound("política não encontrada")
+    authz.ensure_area_scope(actor, policy.area_id, action="editar")
 
     before = {
         "title": policy.title,
@@ -252,6 +254,7 @@ def archive_policy(db: Session, actor: User, policy_id: str, reason: str) -> Pol
     policy = db.get(Policy, policy_id)
     if policy is None:
         raise NotFound("política não encontrada")
+    authz.ensure_area_scope(actor, policy.area_id, action="arquivar")
     if policy.lifecycle_status == PolicyLifecycle.ARCHIVED:
         raise ValidationFailed("política já está arquivada")
     policy.lifecycle_status = PolicyLifecycle.ARCHIVED

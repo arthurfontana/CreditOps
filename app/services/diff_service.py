@@ -68,6 +68,40 @@ def side_by_side(a: PolicyVersion, b: PolicyVersion) -> list[Row]:
     return rows
 
 
+@dataclass
+class FieldChange:
+    """Mudança em campo estruturado entre duas versões (v1)."""
+
+    label: str
+    before: object | None
+    after: object | None
+    kind: str  # added | removed | changed
+
+
+def field_diff(a: PolicyVersion, b: PolicyVersion) -> list[FieldChange]:
+    """Diff dos campos estruturados — complementa o diff textual do corpo."""
+    from app.services import structured_fields
+
+    left = structured_fields.load(a.structured_fields)
+    right = structured_fields.load(b.structured_fields)
+    labels = {
+        d.name: d.label for d in structured_fields.defs_for(b.policy.policy_type)
+    }
+    changes: list[FieldChange] = []
+    for name in sorted(set(left) | set(right)):
+        before, after = left.get(name), right.get(name)
+        if before == after:
+            continue
+        if name not in left:
+            kind = "added"
+        elif name not in right:
+            kind = "removed"
+        else:
+            kind = "changed"
+        changes.append(FieldChange(labels.get(name, name), before, after, kind))
+    return changes
+
+
 def stats(a: PolicyVersion, b: PolicyVersion) -> dict[str, int]:
     added = removed = 0
     matcher = SequenceMatcher(

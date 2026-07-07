@@ -97,11 +97,45 @@ restore do backup (migrações não são revertidas em produção).
 
 ## 6. Verificação de integridade
 
-`python scripts/verify_data.py` — re-calcula o hash de todas as versões
-congeladas e anexos; qualquer divergência indica adulteração direta no
-arquivo do banco/filesystem. Rode após restores e periodicamente.
+- `python scripts/verify_data.py` — re-calcula o hash de todas as versões
+  congeladas e anexos; qualquer divergência indica adulteração direta no
+  arquivo do banco/filesystem. Rode após restores e periodicamente.
+- `python scripts/verify_audit.py` (v1) — verifica a **cadeia de hashes da
+  trilha de auditoria** (`row_hash = sha256(prev_hash + dados)`): linha
+  adulterada, removida ou inserida fora de ordem quebra a cadeia e é
+  reportada. Linhas anteriores à v1 (sem hash) são toleradas apenas antes do
+  início da cadeia. Código de saída 1 = violação.
 
-## 7. Rotinas automáticas
+Agendamento recomendado (junto do backup diário):
+
+```cron
+30 2 * * * cd /opt/creditops && .venv/bin/python scripts/verify_audit.py >> logs/verify.log 2>&1
+```
+
+## 7. Notificações por e-mail (v1)
+
+Desligadas por padrão. Para ativar, em `config/settings.toml`:
+
+```toml
+[plugins]
+notify_email = true
+smtp_host = "smtp.empresa.com"
+smtp_port = 587
+smtp_from = "creditops@empresa.com"
+smtp_starttls = true
+smtp_username = "creditops"        # se o servidor exige autenticação
+app_base_url = "https://creditops.empresa.com"   # links nos e-mails
+```
+
+A senha SMTP vai **apenas** em variável de ambiente: `CREDITOPS_SMTP_PASSWORD`.
+
+Comportamento: eventos de workflow (submissão, aprovação pendente,
+aprovação, rejeição, publicação, vigência) enfileiram notificações na tabela
+`notification`; o envio acontece logo após o commit e, em caso de falha de
+SMTP, a fila é reprocessada a cada 5 min (retry sem perda de eventos).
+Indisponibilidade de SMTP **nunca** afeta o workflow.
+
+## 8. Rotinas automáticas
 
 - **Vigências agendadas**: ativadas pela própria aplicação (tarefa interna a
   cada 10 min + verificação ao abrir a política). Sem cron necessário; o
@@ -109,8 +143,10 @@ arquivo do banco/filesystem. Rode após restores e periodicamente.
   contingência.
 - **Reindexação da busca**: automática na publicação; reconstrução completa
   com `python -m app.cli reindex-all`.
+- **Retry de notificações** (v1): interno, a cada 5 min, apenas com
+  `notify_email = true`.
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 | Sintoma | Causa provável | Ação |
 |---|---|---|
@@ -120,8 +156,10 @@ arquivo do banco/filesystem. Rode após restores e periodicamente.
 | Login bloqueado (`conta bloqueada`) | 5 falhas seguidas | aguardar 15 min ou admin faz reset de senha |
 | Busca sem resultados | índice defasado | `python -m app.cli reindex-all` |
 | `immutable version` em log | tentativa de UPDATE em versão congelada | comportamento correto (proteção); investigue quem tentou na trilha |
+| E-mails não chegam | SMTP indisponível ou credencial errada | veja `logs` (falha de envio é logada); fila reprocessa a cada 5 min; confira `CREDITOPS_SMTP_PASSWORD` |
+| `verify_audit.py` reporta violação | adulteração direta na trilha | trate como incidente: preserve o banco, restaure backup íntegro e investigue |
 
-## 9. Logs
+## 10. Logs
 
 - Aplicação: stdout do uvicorn (redirecione para `logs/` no serviço).
 - Logs não contêm corpos de política nem senhas — apenas IDs e ações.

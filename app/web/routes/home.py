@@ -17,7 +17,7 @@ from app.models import (
     User,
     VersionStatus,
 )
-from app.services import search_service, workflow_service
+from app.services import impact_service, search_service, workflow_service
 from app.web.templating import render
 
 router = APIRouter()
@@ -70,6 +70,12 @@ def home(
                 .where(PolicyVersion.status == VersionStatus.APPROVED.value)
                 .order_by(PolicyVersion.created_at)
             )
+        )
+
+    if role in (Role.AUTHOR, Role.REVIEWER, Role.APPROVER, Role.ADMIN):
+        # cobrança do ciclo: janelas de impacto vencidas sem observado (v1)
+        context["pending_observations"] = impact_service.pending_observations(
+            db, area_id=user.area_id, limit=10
         )
 
     cutoff = date.today() - timedelta(days=30)

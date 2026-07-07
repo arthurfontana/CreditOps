@@ -13,7 +13,7 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 
 ---
 
-## Fase 0 — Fundação (pré-requisito de tudo)
+## Fase 0 — Fundação (pré-requisito de tudo) — ✅ implementada
 
 **Objetivo**: repositório pronto para desenvolvimento incremental, decisões travadas.
 
@@ -29,7 +29,7 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 
 ---
 
-## MVP — "Fonte de verdade" (destrava piloto com 1 time)
+## MVP — "Fonte de verdade" (destrava piloto com 1 time) — ✅ implementado
 
 | Prioridade | Feature | Depende de |
 |---|---|---|
@@ -54,7 +54,11 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 
 ---
 
-## v1 — "Governança para valer" (adoção pela diretoria)
+## v1 — "Governança para valer" (adoção pela diretoria) — ✅ implementada
+
+> Código na `main`: ver [prompt 11](../../prompts/11-governanca-v1.md) para o
+> mapeamento entrega → módulos. O **gate de saída** (abaixo) é organizacional
+> e continua valendo antes de iniciar a v2.
 
 | Prioridade | Feature | Depende de |
 |---|---|---|

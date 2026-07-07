@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Indicadores — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Catálogo de indicadores</h1>
+<p class="help">Indicadores padronizam hipóteses e resultados das mudanças — texto livre não agrega.</p>
+
+<div class="card">
+  <h2>Novo indicador</h2>
+  <form class="filters" method="post" action="/admin/indicators">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="code" placeholder="código (ex.: fpd90)" required>
+    <input type="text" name="name" placeholder="nome" required>
+    <input type="text" name="unit" placeholder="unidade (p.p., %, R$)" style="width:140px">
+    <select name="desired_direction">
+      {% for d in directions %}<option value="{{ d }}">{{ {'up': '↑ desejável', 'down': '↓ desejável', 'contextual': 'contextual'}[d] }}</option>{% endfor %}
+    </select>
+    <button type="submit">Criar</button>
+  </form>
+</div>
+
+<div class="card">
+  <table>
+    <tr><th>Código</th><th>Nome</th><th>Unidade</th><th>Direção desejada</th><th>Ativo</th><th></th></tr>
+    {% for i in indicators %}
+    <tr>
+      <td><code>{{ i.code }}</code></td>
+      <td>{{ i.name }}</td>
+      <td>{{ i.unit or '—' }}</td>
+      <td>{{ {'up': '↑', 'down': '↓', 'contextual': 'contextual'}[i.desired_direction] }}</td>
+      <td>{{ 'sim' if i.is_active else 'não' }}</td>
+      <td>
+        <form class="inline" method="post" action="/admin/indicators/{{ i.id }}/toggle">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn-sm btn-secondary">{{ 'desativar' if i.is_active else 'ativar' }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

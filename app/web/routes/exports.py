@@ -59,6 +59,34 @@ def export_json(
     )
 
 
+@router.get("/policies/{policy_id}/export.pdf")
+def export_pdf(
+    request: Request,
+    policy_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    from app.plugins import registry
+
+    exporter = registry.get_plugin("export_pdf")
+    if exporter is None:
+        raise ValidationFailed("exportação PDF não está habilitada (plugin export_pdf)")
+    policy = policy_service.get_policy(db, user, policy_id)
+    if policy.current_version is None:
+        raise ValidationFailed("política ainda não tem versão vigente")
+    content = export_service.export_version_md(db, policy.current_version)
+    pdf = exporter.render(f"{policy.code} — {policy.title}", content.splitlines())
+    audit_service.record(
+        db, user.id, "export.generated", "policy", policy.id, {"kind": "pdf"}
+    )
+    db.commit()
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{policy.code}.pdf"'},
+    )
+
+
 @router.get("/policies/{policy_id}/dossier")
 def export_dossier(
     request: Request,

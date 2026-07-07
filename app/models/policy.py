@@ -109,6 +109,9 @@ class PolicyVersion(Base):
     based_on_version_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("policy_version.id")
     )
+    change_request_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("change_request.id")
+    )  # demanda que originou a mudança (v1)
     is_rollback: Mapped[bool] = mapped_column(Boolean, default=False)
     content_hash: Mapped[str | None] = mapped_column(String(64))  # congelado ao sair de draft
     created_by: Mapped[str] = mapped_column(String(36), ForeignKey("user.id"))
@@ -120,3 +123,4 @@ class PolicyVersion(Base):
     )
     author = relationship("User", foreign_keys=[created_by])
     based_on = relationship("PolicyVersion", remote_side=[id])
+    change_request = relationship("ChangeRequest", foreign_keys=[change_request_id])

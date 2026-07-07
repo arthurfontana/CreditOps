@@ -25,11 +25,81 @@
       </div>
     </div>
   </div>
+  {% if field_defs %}
+  <div class="card">
+    <h2>Campos estruturados ({{ policy.policy_type }})</h2>
+    <p class="help">Dados comparáveis entre versões — entram no hash e no diff de campos. Preenchimento opcional.</p>
+    <div class="grid2">
+      {% for f in field_defs %}
+      <div>
+        <label for="sf_{{ f.name }}">{{ f.label }}</label>
+        <input type="text" id="sf_{{ f.name }}" name="sf_{{ f.name }}"
+               value="{{ field_values.get(f.name, '') }}"
+               {% if f.hint %}placeholder="{{ f.hint }}"{% endif %}>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   <div class="actions">
     <button type="submit">Salvar</button>
     <a class="btn btn-secondary" href="/versions/{{ version.id }}">Concluir edição</a>
   </div>
 </form>
+
+{% if version.status == 'draft' %}
+<div class="card">
+  <h2>Demanda de origem</h2>
+  <form class="filters" method="post" action="/versions/{{ version.id }}/change-request">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select name="change_request_id">
+      <option value="">— sem demanda vinculada —</option>
+      {% for cr in open_change_requests %}
+      <option value="{{ cr.id }}" {% if version.change_request_id == cr.id %}selected{% endif %}>
+        {{ cr.code }} — {{ cr.title }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary">Salvar vínculo</button>
+    <a class="btn btn-secondary" href="/change-requests/new?policy_id={{ policy.id }}">Nova demanda</a>
+  </form>
+  <p class="help">Vincular a demanda habilita o lead time ponta a ponta (demanda → vigência); a demanda é concluída automaticamente quando esta versão entra em vigor.</p>
+</div>
+
+<div class="card">
+  <h2>Hipóteses de impacto por indicador</h2>
+  {% if metrics %}
+  <table>
+    <tr><th>Indicador</th><th>Mudança esperada</th><th>Janelas</th><th></th></tr>
+    {% for group in metrics|groupby('indicator_id') %}
+    {% set first = group.list[0] %}
+    <tr>
+      <td>{{ first.indicator.name }}</td>
+      <td>{{ first.expected_change }}</td>
+      <td>{% for m in group.list %}{{ m.window_days }}d{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      <td>
+        <form class="inline" method="post" action="/versions/{{ version.id }}/hypotheses/{{ first.indicator_id }}/remove">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn-sm btn-secondary">remover</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  <form class="filters" method="post" action="/versions/{{ version.id }}/hypotheses">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select name="indicator_id" required>
+      {% for i in indicators %}<option value="{{ i.id }}">{{ i.name }} ({{ i.code }})</option>{% endfor %}
+    </select>
+    <input type="text" name="expected_change" placeholder="ex.: +3 p.p. no segmento PF" required style="width:260px">
+    <label><input type="checkbox" name="windows" value="30" checked> 30d</label>
+    <label><input type="checkbox" name="windows" value="60" checked> 60d</label>
+    <label><input type="checkbox" name="windows" value="90" checked> 90d</label>
+    <button type="submit" class="btn-secondary">Adicionar hipótese</button>
+  </form>
+  <p class="help">Declaradas na mudança; o observado é cobrado após a vigência nas janelas escolhidas.</p>
+</div>
+{% endif %}
 
 <div class="card">
   <h2>Anexos</h2>

@@ -45,6 +45,23 @@ class Settings(BaseSettings):
     attachment_max_bytes: int = 20 * 1024 * 1024
     attachment_allowed_extensions: str = "pdf,docx,xlsx,png,jpg,jpeg,csv,txt,md"
 
+    # ── v1: notificações por e-mail (plugin SMTP) ────────────────────────────
+    notify_email: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_from: str = "creditops@example.com"
+    smtp_starttls: bool = True
+    smtp_username: str = ""
+    smtp_password: str = ""  # apenas via env CREDITOPS_SMTP_PASSWORD
+    smtp_timeout_seconds: int = 10
+    app_base_url: str = "http://localhost:8000"  # links nos e-mails
+
+    # ── v1: exportação PDF (plugin sem dependência externa) ─────────────────
+    export_pdf: bool = True
+
+    # ── v1: dashboard — política "parada" após N meses sem revisão ──────────
+    stale_policy_months: int = 12
+
     def __init__(self, **values: Any) -> None:
         merged = {**_toml_defaults(), **values}
         super().__init__(**merged)

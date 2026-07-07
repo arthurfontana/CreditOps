@@ -16,15 +16,25 @@ from sqlalchemy.orm import Session
 from app.models import (
     Approval,
     ApprovalDecision,
+    ChangeRequest,
+    ChangeRequestStatus,
     Policy,
     PolicyVersion,
     Publication,
+    Release,
     Role,
     StatusTransition,
     User,
     VersionStatus,
 )
-from app.services import audit_service, authz, events, version_service
+from app.services import (
+    approval_rules,
+    audit_service,
+    authz,
+    delegation_service,
+    events,
+    version_service,
+)
 from app.services.errors import (
     InvalidTransition,
     PermissionDenied,
@@ -79,8 +89,13 @@ def _transition(
     to_status: VersionStatus,
     *,
     reason: str | None = None,
+    scope_user: User | None = None,
 ) -> None:
-    """Valida a whitelist + papel, muda o status e grava a evidência."""
+    """Valida a whitelist + papel + escopo de área, muda o status e grava a evidência.
+
+    `scope_user`: usuário cujo escopo de área vale para esta ação — o próprio
+    ator por padrão; o delegante quando a decisão é tomada sob delegação.
+    """
     from_status = VersionStatus(version.status)
     rule = TRANSITIONS.get((from_status, to_status))
     if rule is None:
@@ -95,6 +110,7 @@ def _transition(
         if actor is None:
             raise PermissionDenied("ação requer usuário autenticado")
         authz.ensure_role(actor, *rule.roles)
+        authz.ensure_area_scope(scope_user or actor, version.policy.area_id)
         if rule.actor_must_be_author and version.created_by != actor.id:
             raise PermissionDenied("apenas o autor da versão pode executar esta ação")
         # segregação autor≠aprovador; rollback é exceção deliberada (fluxo
@@ -160,74 +176,215 @@ def send_to_approval(db: Session, actor: User, version_id: str) -> PolicyVersion
     _transition(db, actor, version, VersionStatus.IN_APPROVAL)
     version_service.freeze(version)  # conteúdo congela: hash calculado
     db.flush()
+    events.emit(db, "version.sent_to_approval", {"version_id": version.id})
     return version
 
 
-def approve(db: Session, actor: User, version_id: str, justification: str = "") -> PolicyVersion:
+# ─── aprovação multinível + delegação (v1) ───────────────────────────────────
+
+
+def _current_round_approvals(db: Session, version: PolicyVersion) -> list[Approval]:
+    """Aprovações da rodada atual (após a última entrada em `in_approval`).
+
+    Rodadas anteriores (rejeitadas e reenviadas) não contam para os níveis.
+    """
+    last_entry = db.scalars(
+        select(StatusTransition)
+        .where(
+            StatusTransition.version_id == version.id,
+            StatusTransition.to_status == VersionStatus.IN_APPROVAL.value,
+        )
+        .order_by(StatusTransition.created_at.desc(), StatusTransition.id.desc())
+        .limit(1)
+    ).first()
+    stmt = select(Approval).where(
+        Approval.version_id == version.id,
+        Approval.decision == ApprovalDecision.APPROVED.value,
+    )
+    if last_entry is not None:
+        stmt = stmt.where(Approval.decided_at >= last_entry.created_at)
+    return list(db.scalars(stmt.order_by(Approval.level)))
+
+
+def approval_progress(db: Session, version: PolicyVersion) -> tuple[int, int]:
+    """(níveis aprovados na rodada atual, níveis exigidos pelo tipo)."""
+    required = approval_rules.required_levels(db, version.policy.policy_type)
+    done = len(_current_round_approvals(db, version))
+    return done, required
+
+
+def _resolve_decision_actor(
+    db: Session, actor: User, version: PolicyVersion, on_behalf_of: str | None
+) -> User | None:
+    """Valida papel/escopo/segregação do decisor e resolve a delegação.
+
+    Retorna o delegante (para registrar `delegated_from_id`) ou None quando
+    o aprovador decide em nome próprio.
+    """
+    authz.ensure_role(actor, Role.APPROVER)
+    if version.created_by == actor.id and not version.is_rollback:
+        raise PermissionDenied("segregação de funções: autor não decide a própria versão")
+
+    area_id = version.policy.area_id
+    delegator: User | None = None
+    if on_behalf_of:
+        candidates = {
+            d.delegator_id for d in delegation_service.active_delegations_to(db, actor.id)
+        }
+        if on_behalf_of not in candidates:
+            raise PermissionDenied("não há delegação ativa deste aprovador para você")
+        delegator = db.get(User, on_behalf_of)
+    elif not authz.in_area_scope(actor, area_id):
+        # fora da própria área: só decide se alguém da área delegou
+        delegator = delegation_service.resolve_delegator(db, actor, area_id=area_id)
+        if delegator is None:
+            raise PermissionDenied(
+                "permissão por área: você não pode decidir políticas de outra área"
+            )
+    if delegator is not None:
+        if delegator.id == version.created_by and not version.is_rollback:
+            raise PermissionDenied(
+                "segregação de funções: delegação do autor não permite decidir a própria versão"
+            )
+        authz.ensure_area_scope(delegator, area_id)
+    return delegator
+
+
+def approve(
+    db: Session,
+    actor: User,
+    version_id: str,
+    justification: str = "",
+    *,
+    on_behalf_of: str | None = None,
+) -> PolicyVersion:
+    """Aprova o nível corrente. A versão só avança para `approved` quando o
+    último nível exigido pelo tipo é atingido; qualquer rejeição devolve tudo."""
     version = version_service.get_version(db, version_id)
-    _transition(db, actor, version, VersionStatus.APPROVED)
+    if VersionStatus(version.status) != VersionStatus.IN_APPROVAL:
+        raise InvalidTransition(
+            f"transição não permitida: {version.status} → {VersionStatus.APPROVED}"
+        )
+    delegator = _resolve_decision_actor(db, actor, version, on_behalf_of)
+    done, required = approval_progress(db, version)
+    round_approvals = _current_round_approvals(db, version)
+    deciders = {a.approver_id for a in round_approvals} | {
+        a.delegated_from_id for a in round_approvals if a.delegated_from_id
+    }
+    if actor.id in deciders or (delegator and delegator.id in deciders):
+        raise ValidationFailed("cada nível de aprovação exige um aprovador diferente")
+
+    level = done + 1
     db.add(
         Approval(
             version_id=version.id,
             approver_id=actor.id,
             decision=ApprovalDecision.APPROVED,
+            level=level,
             justification=justification or None,
+            delegated_from_id=delegator.id if delegator else None,
         )
     )
     db.flush()
     audit_service.record(
         db, actor.id, "version.approved", "policy_version", version.id,
-        {"justification": justification or None},
+        {
+            "level": level,
+            "required_levels": required,
+            "justification": justification or None,
+            "delegated_from": delegator.id if delegator else None,
+        },
     )
-    events.emit(db, "version.approved", {"version_id": version.id})
+    if level >= required:
+        _transition(db, actor, version, VersionStatus.APPROVED, scope_user=delegator or actor)
+        events.emit(db, "version.approved", {"version_id": version.id})
+    else:
+        events.emit(
+            db, "version.approval_level",
+            {"version_id": version.id, "level": level, "required": required},
+        )
     return version
 
 
-def reject(db: Session, actor: User, version_id: str, justification: str) -> PolicyVersion:
+def reject(
+    db: Session,
+    actor: User,
+    version_id: str,
+    justification: str,
+    *,
+    on_behalf_of: str | None = None,
+) -> PolicyVersion:
     version = version_service.get_version(db, version_id)
-    if version.created_by == actor.id and not version.is_rollback:
-        raise PermissionDenied("segregação de funções: autor não decide a própria versão")
-    _transition(db, actor, version, VersionStatus.DRAFT, reason=justification)
+    if VersionStatus(version.status) != VersionStatus.IN_APPROVAL:
+        raise InvalidTransition(
+            f"transição não permitida: {version.status} → {VersionStatus.DRAFT}"
+        )
+    delegator = _resolve_decision_actor(db, actor, version, on_behalf_of)
+    _transition(
+        db, actor, version, VersionStatus.DRAFT,
+        reason=justification, scope_user=delegator or actor,
+    )
     db.add(
         Approval(
             version_id=version.id,
             approver_id=actor.id,
             decision=ApprovalDecision.REJECTED,
             justification=justification,
+            delegated_from_id=delegator.id if delegator else None,
         )
     )
     db.flush()
     audit_service.record(
         db, actor.id, "version.rejected", "policy_version", version.id,
-        {"justification": justification},
+        {
+            "justification": justification,
+            "delegated_from": delegator.id if delegator else None,
+        },
     )
     events.emit(db, "version.rejected", {"version_id": version.id})
     return version
 
 
 def publish(
-    db: Session, actor: User, version_id: str, effective_from: date
+    db: Session,
+    actor: User,
+    version_id: str,
+    effective_from: date,
+    *,
+    release_id: str | None = None,
 ) -> PolicyVersion:
     """Publica versão aprovada com data de vigência (hoje = imediata; futura = agendada).
 
     Vigência retroativa não existe: effective_from >= hoje.
+    `release_id` (v1) agrupa publicações feitas em conjunto.
     """
     version = version_service.get_version(db, version_id)
     today = date.today()
     if effective_from < today:
         raise ValidationFailed("vigência retroativa não é permitida (effective_from >= hoje)")
+    release = None
+    if release_id:
+        release = db.get(Release, release_id)
+        if release is None:
+            raise ValidationFailed("release não encontrada")
     _transition(db, actor, version, VersionStatus.PUBLISHED)
     db.add(
         Publication(
             version_id=version.id,
             published_by=actor.id,
             effective_from=effective_from,
+            release_id=release_id or None,
         )
     )
+    if release is not None:
+        release.published_at = datetime.utcnow()
     db.flush()
     audit_service.record(
         db, actor.id, "version.published", "policy_version", version.id,
-        {"effective_from": effective_from.isoformat()},
+        {
+            "effective_from": effective_from.isoformat(),
+            "release": release.name if release else None,
+        },
     )
     events.emit(db, "version.published", {"version_id": version.id})
     if effective_from <= today:
@@ -269,6 +426,25 @@ def make_effective(db: Session, version_id: str) -> PolicyVersion:
     _transition(db, None, version, VersionStatus.EFFECTIVE)
     policy.current_version_id = version.id
     db.flush()
+
+    # fecha a demanda vinculada: lead time demanda → vigência (v1)
+    if version.change_request_id:
+        change_request = db.get(ChangeRequest, version.change_request_id)
+        if change_request is not None and change_request.status in (
+            ChangeRequestStatus.OPEN,
+            ChangeRequestStatus.IN_PROGRESS,
+        ):
+            change_request.status = ChangeRequestStatus.DONE
+            change_request.closed_at = datetime.utcnow()
+            change_request.resolution = (
+                f"Concluída pela vigência de {policy.code} v{version.version_number}"
+            )
+            db.flush()
+            audit_service.record(
+                db, None, "change_request.done", "change_request", change_request.id,
+                {"code": change_request.code, "version_id": version.id},
+            )
+
     audit_service.record(
         db, None, "version.effective", "policy_version", version.id,
         {
@@ -317,6 +493,7 @@ def rollback(
     policy = db.get(Policy, policy_id)
     if policy is None:
         raise ValidationFailed("política não encontrada")
+    authz.ensure_area_scope(actor, policy.area_id, action="fazer rollback")
     target = version_service.get_version(db, target_version_id)
     if target.policy_id != policy_id:
         raise ValidationFailed("versão-alvo não pertence a esta política")

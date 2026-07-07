@@ -73,4 +73,41 @@ class Release(Base):
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[str] = mapped_column(String(36), ForeignKey("user.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     published_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    creator = relationship("User")
+    publications: Mapped[list[Publication]] = relationship(
+        "Publication", viewonly=True, order_by="Publication.published_at"
+    )
+
+
+class ApprovalRule(Base):
+    """Níveis de aprovação exigidos por tipo de política (v1).
+
+    Sem regra cadastrada, o tipo exige 1 nível (comportamento do MVP).
+    """
+
+    __tablename__ = "approval_rule"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    policy_type: Mapped[str] = mapped_column(String(30), unique=True)  # enums.PolicyType
+    required_levels: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class ApprovalDelegation(Base):
+    """Delegação de aprovação por ausência (v1) — janela datada e revogável."""
+
+    __tablename__ = "approval_delegation"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    delegator_id: Mapped[str] = mapped_column(String(36), ForeignKey("user.id"))
+    delegate_id: Mapped[str] = mapped_column(String(36), ForeignKey("user.id"))
+    starts_at: Mapped[date] = mapped_column(Date)
+    ends_at: Mapped[date] = mapped_column(Date)
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    delegator = relationship("User", foreign_keys=[delegator_id])
+    delegate = relationship("User", foreign_keys=[delegate_id])
