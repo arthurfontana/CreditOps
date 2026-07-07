@@ -1,6 +1,7 @@
 """CLI de operação: python -m app.cli <comando>.
 
-Comandos: create-admin, reindex-all, apply-effectiveness.
+Comandos: create-admin, reindex-all, apply-effectiveness,
+create-token, list-tokens, revoke-token (API de consumo, v2).
 """
 
 from __future__ import annotations
@@ -11,7 +12,12 @@ import sys
 
 from app.db import SessionLocal
 from app.models import Role
-from app.services import search_service, user_service, workflow_service
+from app.services import (
+    search_service,
+    service_token_service,
+    user_service,
+    workflow_service,
+)
 
 
 def cmd_create_admin(args: argparse.Namespace) -> int:
@@ -65,6 +71,54 @@ def cmd_apply_effectiveness(args: argparse.Namespace) -> int:
         db.close()
 
 
+def cmd_create_token(args: argparse.Namespace) -> int:
+    db = SessionLocal()
+    try:
+        token, plaintext = service_token_service.create_token(db, None, args.name)
+        db.commit()
+        print(f"Token de serviço criado: {token.name}")
+        print(f"  {plaintext}")
+        print("Guarde agora — o token não pode ser recuperado (o banco só tem o hash).")
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"Erro: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        db.close()
+
+
+def cmd_list_tokens(args: argparse.Namespace) -> int:
+    db = SessionLocal()
+    try:
+        tokens = service_token_service.list_tokens(db)
+        if not tokens:
+            print("Nenhum token de serviço cadastrado.")
+            return 0
+        for t in tokens:
+            status = "REVOGADO" if t.revoked_at else "ativo"
+            last = t.last_used_at.isoformat() if t.last_used_at else "nunca usado"
+            print(f"{t.id}  {t.name:30s}  {status:8s}  último uso: {last}")
+        return 0
+    finally:
+        db.close()
+
+
+def cmd_revoke_token(args: argparse.Namespace) -> int:
+    db = SessionLocal()
+    try:
+        token = service_token_service.revoke_token(db, None, args.token_id)
+        db.commit()
+        print(f"Token revogado: {token.name}")
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"Erro: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        db.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="creditops", description="CLI do CreditOps")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -81,6 +135,17 @@ def main(argv: list[str] | None = None) -> int:
         "apply-effectiveness", help="ativa vigências agendadas cuja data chegou"
     )
     p_apply.set_defaults(func=cmd_apply_effectiveness)
+
+    p_token = sub.add_parser("create-token", help="cria token de serviço da API de consumo")
+    p_token.add_argument("--name", required=True, help="nome do sistema consumidor")
+    p_token.set_defaults(func=cmd_create_token)
+
+    p_tokens = sub.add_parser("list-tokens", help="lista tokens de serviço")
+    p_tokens.set_defaults(func=cmd_list_tokens)
+
+    p_revoke = sub.add_parser("revoke-token", help="revoga um token de serviço")
+    p_revoke.add_argument("token_id", help="id do token (ver list-tokens)")
+    p_revoke.set_defaults(func=cmd_revoke_token)
 
     args = parser.parse_args(argv)
     return args.func(args)

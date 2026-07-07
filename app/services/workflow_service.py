@@ -23,6 +23,7 @@ from app.models import (
     Publication,
     Release,
     Role,
+    RolloutScope,
     StatusTransition,
     User,
     VersionStatus,
@@ -352,16 +353,38 @@ def publish(
     effective_from: date,
     *,
     release_id: str | None = None,
+    rollout_scope: str = RolloutScope.FULL.value,
+    pilot_description: str | None = None,
+    pilot_ends_at: date | None = None,
 ) -> PolicyVersion:
     """Publica versão aprovada com data de vigência (hoje = imediata; futura = agendada).
 
     Vigência retroativa não existe: effective_from >= hoje.
     `release_id` (v1) agrupa publicações feitas em conjunto.
+    Publicação-experimento (v2): rollout_scope="pilot" exige escopo declarado
+    (pilot_description) e prazo (pilot_ends_at) — o motor executa o teste,
+    o CreditOps o documenta e governa; promoção/encerramento seguem o fluxo
+    normal de aprovação.
     """
     version = version_service.get_version(db, version_id)
     today = date.today()
     if effective_from < today:
         raise ValidationFailed("vigência retroativa não é permitida (effective_from >= hoje)")
+    if rollout_scope not in [s.value for s in RolloutScope]:
+        raise ValidationFailed(f"escopo de publicação inválido: {rollout_scope}")
+    if rollout_scope == RolloutScope.PILOT.value:
+        if not (pilot_description and pilot_description.strip()):
+            raise ValidationFailed(
+                "piloto exige escopo declarado (segmento, região, % da esteira e "
+                "critério de sucesso)"
+            )
+        if pilot_ends_at is None:
+            raise ValidationFailed("piloto exige prazo (pilot_ends_at)")
+        if pilot_ends_at <= effective_from:
+            raise ValidationFailed("prazo do piloto deve ser posterior à vigência")
+    else:
+        pilot_description = None
+        pilot_ends_at = None
     release = None
     if release_id:
         release = db.get(Release, release_id)
@@ -374,6 +397,9 @@ def publish(
             published_by=actor.id,
             effective_from=effective_from,
             release_id=release_id or None,
+            rollout_scope=rollout_scope,
+            pilot_description=pilot_description.strip() if pilot_description else None,
+            pilot_ends_at=pilot_ends_at,
         )
     )
     if release is not None:
@@ -384,12 +410,36 @@ def publish(
         {
             "effective_from": effective_from.isoformat(),
             "release": release.name if release else None,
+            "rollout_scope": rollout_scope,
+            "pilot_ends_at": pilot_ends_at.isoformat() if pilot_ends_at else None,
         },
     )
-    events.emit(db, "version.published", {"version_id": version.id})
+    events.emit(
+        db, "version.published",
+        {"version_id": version.id, "rollout_scope": rollout_scope},
+    )
     if effective_from <= today:
         make_effective(db, version.id)
     return version
+
+
+def active_pilots(db: Session) -> list[Publication]:
+    """Publicações-experimento cuja versão está em vigor (v2).
+
+    Piloto com prazo vencido continua na lista — é exatamente o que
+    precisa de decisão (promover, ajustar ou encerrar pelo fluxo normal).
+    """
+    return list(
+        db.scalars(
+            select(Publication)
+            .join(PolicyVersion, PolicyVersion.id == Publication.version_id)
+            .where(
+                Publication.rollout_scope == RolloutScope.PILOT.value,
+                PolicyVersion.status == VersionStatus.EFFECTIVE.value,
+            )
+            .order_by(Publication.pilot_ends_at)
+        )
+    )
 
 
 def make_effective(db: Session, version_id: str) -> PolicyVersion:

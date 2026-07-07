@@ -13,6 +13,7 @@ from app.auth.deps import current_user, require_role
 from app.db import get_db
 from app.models import (
     Area,
+    Policy,
     PolicyType,
     PolicyVersion,
     Product,
@@ -187,6 +188,8 @@ def policy_detail(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ):
+    from app.services import read_receipt_service, reference_service
+
     # verificação lazy de vigência ao carregar a política
     if workflow_service.apply_due_publications(db):
         db.commit()
@@ -194,10 +197,23 @@ def policy_detail(
     versions = policy_service.visible_versions(db, user, policy)
     open_version = version_service.open_version(db, policy.id)
     publication = _publication_of(db, policy.current_version)
+    receipt = (
+        read_receipt_service.receipt_of(db, user, policy.current_version.id)
+        if policy.current_version
+        else None
+    )
+    reference_targets = list(
+        db.scalars(select(Policy).where(Policy.id != policy.id).order_by(Policy.code))
+    )
     return render(
         request, "policy/detail.html", user,
         policy=policy, versions=versions, open_version=open_version,
         publication=publication, msg=msg,
+        references_out=reference_service.outgoing(db, policy.id),
+        references_in=reference_service.incoming(db, policy.id),
+        reference_targets=reference_targets,
+        artifact_names=reference_service.artifact_names(db),
+        receipt=receipt,
     )
 
 

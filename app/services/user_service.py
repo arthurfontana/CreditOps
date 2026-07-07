@@ -24,6 +24,23 @@ class AuthenticationFailed(Exception):
     para o usuário final (não revelar qual campo falhou)."""
 
 
+def _credential_ok(user: User, password: str) -> bool:
+    """Valida a credencial: SSO (plugin) para usuário sem senha local;
+    argon2 local caso contrário (fallback se o diretório cair — wiki 04).
+
+    Import lazy do registry (mesma convenção do notification_service):
+    o service não depende do plugin para operar.
+    """
+    if user.password_hash is None:  # usuário SSO (v2): password_hash nulo
+        from app.plugins import registry
+
+        sso = registry.get_plugin("auth")
+        if sso is None:
+            return False  # sem plugin de SSO, usuário SSO não autentica
+        return bool(sso.authenticate(user.username, password))
+    return verify_password(user.password_hash, password)
+
+
 def authenticate(db: Session, username: str, password: str) -> User:
     settings = get_settings()
     user = db.scalars(
@@ -47,7 +64,7 @@ def authenticate(db: Session, username: str, password: str) -> User:
         )
         raise AuthenticationFailed("credenciais inválidas")
 
-    if not user.password_hash or not verify_password(user.password_hash, password):
+    if not _credential_ok(user, password):
         user.failed_login_count += 1
         payload: dict = {"failures": user.failed_login_count}
         if user.failed_login_count >= settings.login_max_failures:
@@ -77,19 +94,23 @@ def create_user(
     email: str,
     display_name: str,
     role: str,
-    password: str,
+    password: str | None,
     area_id: str | None = None,
     is_auditor: bool = False,
     must_change_password: bool = True,
 ) -> User:
-    """actor=None apenas para o bootstrap via CLI create-admin."""
+    """actor=None apenas para o bootstrap via CLI create-admin.
+
+    password=None cria usuário SSO (v2): sem senha local (password_hash
+    nulo), autentica exclusivamente no diretório via plugin `auth`.
+    """
     if actor is not None:
         authz.ensure_role(actor, Role.ADMIN)
     if role not in [r.value for r in Role]:
         raise ValidationFailed(f"papel inválido: {role}")
     if not username.strip() or not email.strip():
         raise ValidationFailed("username e e-mail são obrigatórios")
-    if len(password) < 8:
+    if password is not None and len(password) < 8:
         raise ValidationFailed("senha deve ter no mínimo 8 caracteres")
     existing = db.scalars(
         select(User).where((User.username == username) | (User.email == email))
@@ -102,10 +123,10 @@ def create_user(
         email=email.strip(),
         display_name=display_name.strip() or username.strip(),
         role=role,
-        password_hash=hash_password(password),
+        password_hash=hash_password(password) if password is not None else None,
         area_id=area_id,
         is_auditor=is_auditor,
-        must_change_password=must_change_password,
+        must_change_password=must_change_password if password is not None else False,
     )
     db.add(user)
     db.flush()
@@ -115,7 +136,7 @@ def create_user(
         "user.created",
         "user",
         user.id,
-        {"username": user.username, "role": user.role},
+        {"username": user.username, "role": user.role, "sso": password is None},
     )
     return user
 

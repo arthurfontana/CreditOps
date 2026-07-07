@@ -10,6 +10,9 @@
   {% elif policy.current_version %}
     <span class="badge effective">EM VIGOR: v{{ policy.current_version.version_number }}
       {% if publication %}desde {{ publication.effective_from.strftime('%d/%m/%Y') }}{% endif %}</span>
+    {% if publication and publication.rollout_scope == 'pilot' %}
+    <span class="badge in_approval">PILOTO até {{ publication.pilot_ends_at.strftime('%d/%m/%Y') if publication.pilot_ends_at }}</span>
+    {% endif %}
   {% else %}
     <span class="badge draft">sem versão vigente</span>
   {% endif %}
@@ -56,9 +59,122 @@
 {% if policy.current_version %}
 <div class="card">
   <h2>Conteúdo vigente (v{{ policy.current_version.version_number }})</h2>
+  {% if publication and publication.rollout_scope == 'pilot' %}
+  <div class="banner">Publicação-experimento (piloto)
+    {% if publication.pilot_ends_at %}— prazo: {{ publication.pilot_ends_at.strftime('%d/%m/%Y') }}{% endif %}.
+    Escopo: {{ publication.pilot_description }}
+    <br>Promoção a produção, ajuste ou encerramento seguem o fluxo normal de aprovação.</div>
+  {% endif %}
   <div class="md-body">{{ policy.current_version.body_md|markdown|safe }}</div>
+  <div class="actions">
+    {% if receipt %}
+      <span class="badge effective">Ciência registrada em {{ receipt.acknowledged_at.strftime('%d/%m/%Y %H:%M') }}</span>
+    {% else %}
+    <form class="inline" method="post" action="/policies/{{ policy.id }}/acknowledge">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">Li e estou ciente desta versão</button>
+    </form>
+    {% endif %}
+    <a class="btn btn-secondary btn-sm" href="/policies/{{ policy.id }}/readers">Quem já leu</a>
+  </div>
 </div>
 {% endif %}
+
+<div class="card">
+  <h2>Recertificação</h2>
+  {% if policy.review_due_at %}
+    <p>Próxima recertificação: <strong>{{ policy.review_due_at.strftime('%d/%m/%Y') }}</strong></p>
+  {% else %}
+    <p class="help">Sem prazo de recertificação definido.</p>
+  {% endif %}
+  {% if user.role in ('author', 'approver', 'admin') %}
+  <div class="grid2">
+    <form class="stack" method="post" action="/policies/{{ policy.id }}/review-due">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="review_due">Definir prazo (vazio remove)</label>
+      <input type="date" id="review_due" name="review_due"
+             value="{{ policy.review_due_at.date().isoformat() if policy.review_due_at }}">
+      <div class="actions"><button type="submit" class="btn-secondary">Salvar prazo</button></div>
+    </form>
+    {% if user.role in ('approver', 'admin') and policy.current_version %}
+    <form class="stack" method="post" action="/policies/{{ policy.id }}/recertify"
+          onsubmit="return confirm('Recertificar: confirma que a política vigente continua válida? O registro vai para a auditoria.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="months">Recertificar agora (próximo ciclo em meses)</label>
+      <input type="number" id="months" name="months" value="12" min="1" max="60">
+      <label for="recert_note">Observação (opcional)</label>
+      <input type="text" id="recert_note" name="note">
+      <div class="actions"><button type="submit">Recertificar</button></div>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Referências <a class="btn btn-secondary btn-sm" href="/impact?policy_id={{ policy.id }}">Análise de impacto</a></h2>
+  <div class="grid2">
+    <div>
+      <h3>Esta política referencia</h3>
+      <ul>
+        {% for r in references_out %}
+        <li>
+          <em>{{ r.relation.replace('_', ' ') }}</em>
+          {% if r.to_policy %}<a href="/policies/{{ r.to_policy.id }}">{{ r.to_policy.code }}</a> — {{ r.to_policy.title }}
+          {% else %}<strong>{{ r.artifact_name }}</strong> <span class="help">(artefato)</span>{% endif %}
+          {% if r.note %}<span class="help">— {{ r.note }}</span>{% endif %}
+          {% if user.role in ('author', 'admin') %}
+          <form class="inline" method="post" action="/policies/{{ policy.id }}/references/{{ r.id }}/delete">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="linklike">remover</button>
+          </form>
+          {% endif %}
+        </li>
+        {% else %}<li class="help">Nenhuma referência declarada.</li>{% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h3>Referenciada por</h3>
+      <ul>
+        {% for r in references_in %}
+        <li><a href="/policies/{{ r.from_policy.id }}">{{ r.from_policy.code }}</a>
+          <em>{{ r.relation.replace('_', ' ') }}</em> esta política</li>
+        {% else %}<li class="help">Nenhuma política referencia esta.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% if user.role in ('author', 'admin') %}
+  <form class="stack" method="post" action="/policies/{{ policy.id }}/references">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid2">
+      <div>
+        <label for="relation">Relação</label>
+        <select id="relation" name="relation">
+          <option value="usa">usa</option>
+          <option value="depende_de">depende de</option>
+          <option value="substitui">substitui</option>
+        </select>
+        <label for="to_policy_id">Política-alvo</label>
+        <select id="to_policy_id" name="to_policy_id">
+          <option value="">— nenhuma (use artefato) —</option>
+          {% for p in reference_targets %}<option value="{{ p.id }}">{{ p.code }} — {{ p.title }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="artifact_name">…ou artefato (score, motor, sistema)</label>
+        <input type="text" id="artifact_name" name="artifact_name" list="artifact-names"
+               placeholder="Ex.: Score Serasa">
+        <datalist id="artifact-names">
+          {% for name in artifact_names %}<option value="{{ name }}">{% endfor %}
+        </datalist>
+        <label for="ref_note">Nota (opcional)</label>
+        <input type="text" id="ref_note" name="note">
+      </div>
+    </div>
+    <div class="actions"><button type="submit" class="btn-secondary">Adicionar referência</button></div>
+  </form>
+  {% endif %}
+</div>
 
 <div class="card">
   <h2>Versões</h2>

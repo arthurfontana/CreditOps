@@ -13,7 +13,7 @@ Essa ordem também minimiza risco de adoção: o MVP já é útil para **um úni
 
 ---
 
-## Fase MVP — "A fonte de verdade"
+## Fase MVP — "A fonte de verdade" — ✅ implementada
 
 **Dor que resolve**: "não sabemos qual é a versão vigente nem quem aprovou".
 
@@ -48,7 +48,7 @@ Um time de crédito consegue: migrar 10 políticas reais, publicar uma alteraç�
 
 ---
 
-## Versão intermediária (v1) — "Governança para valer"
+## Versão intermediária (v1) — "Governança para valer" — ✅ implementada
 
 **Dor que resolve**: "o sistema funciona para um time; agora precisa funcionar para a diretoria de crédito inteira".
 
@@ -73,7 +73,7 @@ Um time de crédito consegue: migrar 10 políticas reais, publicar uma alteraç�
 
 ---
 
-## Produto completo (v2) — "Plataforma da empresa"
+## Produto completo (v2) — "Plataforma da empresa" — ✅ implementada
 
 **Dor que resolve**: "outras diretorias querem usar; TI exige integração com o diretório; sistemas precisam consumir a versão vigente".
 

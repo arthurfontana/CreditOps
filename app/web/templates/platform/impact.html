@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Análise de impacto — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Análise de impacto</h1>
+<p class="help">"Se eu mudar X, quais políticas são afetadas?" — percorre o grafo de
+referências no sentido inverso (quem usa/depende do alvo, transitivamente).</p>
+
+<form class="card" method="get" action="/impact">
+  <div class="grid2">
+    <div>
+      <label for="policy_id">Política-alvo</label>
+      <select id="policy_id" name="policy_id">
+        <option value="">— escolha —</option>
+        {% for p in candidates %}
+        <option value="{{ p.id }}" {% if selected_policy and selected_policy.id == p.id %}selected{% endif %}>{{ p.code }} — {{ p.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="artifact">…ou artefato (score, motor, sistema)</label>
+      <input type="text" id="artifact" name="artifact" value="{{ artifact }}"
+             list="artifact-list" placeholder="Ex.: Score Serasa">
+      <datalist id="artifact-list">
+        {% for name in artifacts %}<option value="{{ name }}">{% endfor %}
+      </datalist>
+    </div>
+  </div>
+  <div class="actions"><button type="submit">Analisar</button></div>
+</form>
+
+{% if hits is not none %}
+<div class="card">
+  <h2>Afetadas por "{{ target_label }}" ({{ hits|length }})</h2>
+  {% if hits %}
+  <table>
+    <tr><th>Nível</th><th>Política</th><th>Área</th><th>Caminho</th></tr>
+    {% for h in hits %}
+    <tr>
+      <td>{{ h.depth }}</td>
+      <td><a href="/policies/{{ h.policy.id }}">{{ h.policy.code }}</a> — {{ h.policy.title }}</td>
+      <td>{{ h.policy.area.name if h.policy.area }}</td>
+      <td class="help">{{ h.policy.code }} → {{ h.via }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="help">Nível 1 referencia o alvo diretamente; níveis maiores são propagação
+  transitiva (afetadas por afetadas).</p>
+  {% else %}
+  <p class="help">Nenhuma política declara referência a este alvo.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

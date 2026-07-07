@@ -81,5 +81,25 @@ class IndicatorDirection(StrEnum):
     CONTEXTUAL = "contextual"
 
 
+class RolloutScope(StrEnum):
+    """Escopo da publicação (v2): total ou experimento/piloto."""
+
+    FULL = "full"
+    PILOT = "pilot"
+
+
+class ReferenceRelation(StrEnum):
+    """Aresta do grafo de referências entre políticas/artefatos (v2)."""
+
+    USA = "usa"
+    DEPENDE_DE = "depende_de"
+    SUBSTITUI = "substitui"
+
+
+class ReferenceTargetType(StrEnum):
+    POLICY = "policy"
+    ARTIFACT = "artifact"  # ex.: "Score Serasa", "Motor Antifraude"
+
+
 # Janelas de observação do impacto (dias após a vigência)
 IMPACT_WINDOWS = (30, 60, 90)

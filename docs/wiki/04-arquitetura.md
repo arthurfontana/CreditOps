@@ -81,11 +81,11 @@ Backup = copiar uma pasta. Instalação = `pip install` + um comando. Upgrade = 
 
 | Plugin | Depende de | Fase |
 |---|---|---|
-| `plugins/notify_email` | SMTP corporativo | v1 |
-| `plugins/auth_ldap` | AD/LDAP | v2 |
-| `plugins/ai_*` | Provedor de IA (externo ou local) | v2 |
-| `plugins/export_pdf` | wkhtmltopdf/weasyprint se permitido | v1 |
-| `plugins/webhook` | Sistemas consumidores | v2 |
+| `plugins/notify_email` | SMTP corporativo | v1 ✅ |
+| `plugins/auth_ldap` | AD/LDAP | v2 ✅ |
+| `plugins/ai_*` | Provedor de IA (externo ou local) | v2 ✅ |
+| `plugins/export_pdf` | wkhtmltopdf/weasyprint se permitido | v1 ✅ (sem dependência externa) |
+| `plugins/webhook` | Sistemas consumidores | v2 ✅ |
 
 Regra arquitetural: **plugins são descobertos por configuração** (`config/settings.toml`), implementam interfaces definidas em `app/plugins/base.py` e falham de forma silenciosa e logada — indisponibilidade de plugin nunca derruba o core. Nenhum módulo do core importa um plugin diretamente; o core emite **eventos de domínio** (ex.: `version.published`) e os plugins assinam esses eventos.
 

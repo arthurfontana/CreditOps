@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Leituras pendentes — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Minhas leituras pendentes</h1>
+<p class="help">Políticas vigentes cuja versão atual você ainda não declarou ter lido
+("ciência da operação").</p>
+<div class="card">
+  {% if pending %}
+  <table>
+    <tr><th>Código</th><th>Título</th><th>Versão vigente</th><th></th></tr>
+    {% for p in pending %}
+    <tr>
+      <td><a href="/policies/{{ p.id }}">{{ p.code }}</a></td>
+      <td>{{ p.title }}</td>
+      <td>v{{ p.current_version.version_number }}</td>
+      <td>
+        <form class="inline" method="post" action="/policies/{{ p.id }}/acknowledge">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="btn-sm">Li e estou ciente</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma leitura pendente — você está em dia. ✔</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Recertificação — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Recertificação periódica</h1>
+<p class="help">Políticas vigentes e seu prazo de revisão obrigatória. Recertificar =
+confirmar formalmente que a política continua válida (registrado em auditoria).</p>
+
+<div class="card">
+  <h2>Vencidas ({{ r.overdue|length }})</h2>
+  {% if r.overdue %}
+  <table>
+    <tr><th>Código</th><th>Título</th><th>Área</th><th>Venceu em</th></tr>
+    {% for p in r.overdue %}
+    <tr>
+      <td><a href="/policies/{{ p.id }}">{{ p.code }}</a></td>
+      <td>{{ p.title }}</td>
+      <td>{{ p.area.name if p.area }}</td>
+      <td><strong>{{ p.review_due_at.strftime('%d/%m/%Y') }}</strong></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nenhuma política com recertificação vencida.</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Vencem em até 60 dias ({{ r.due_soon|length }})</h2>
+  {% if r.due_soon %}
+  <table>
+    <tr><th>Código</th><th>Título</th><th>Área</th><th>Vence em</th></tr>
+    {% for p in r.due_soon %}
+    <tr>
+      <td><a href="/policies/{{ p.id }}">{{ p.code }}</a></td>
+      <td>{{ p.title }}</td>
+      <td>{{ p.area.name if p.area }}</td>
+      <td>{{ p.review_due_at.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="help">Nada vence nos próximos 60 dias.</p>{% endif %}
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Agendadas ({{ r.scheduled|length }})</h2>
+    <ul>
+      {% for p in r.scheduled %}
+      <li><a href="/policies/{{ p.id }}">{{ p.code }}</a> — {{ p.review_due_at.strftime('%d/%m/%Y') }}</li>
+      {% else %}<li class="help">Nenhuma.</li>{% endfor %}
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Sem prazo definido ({{ r.unscheduled|length }})</h2>
+    <ul>
+      {% for p in r.unscheduled %}
+      <li><a href="/policies/{{ p.id }}">{{ p.code }}</a> — {{ p.title }}</li>
+      {% else %}<li class="help">Nenhuma.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

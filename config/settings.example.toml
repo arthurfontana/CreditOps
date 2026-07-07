@@ -34,9 +34,47 @@ export_pdf = true
 # Política é considerada "parada" após N meses sem revisão
 # stale_policy_months = 12
 
-# ── v2 (pontos de extensão; ignorados na v1) ─────────────────────────────────
-# [ai]
-# provider = "none"             # none | openai | anthropic | gemini | internal
-# model = ""
-# base_url = ""
-# timeout_seconds = 30
+# ── v2: SSO via LDAP/Active Directory (plugin auth_ldap) ────────────────────
+# Usuários SSO (criados sem senha local) autenticam no diretório; usuários
+# com senha local continuam funcionando (fallback se o diretório cair).
+# Senha da conta de serviço vai APENAS em env: CREDITOPS_LDAP_BIND_PASSWORD.
+[sso]
+auth_sso = "none"                # none | ldap
+# ldap_server = "ldap://ad.empresa.com:389"   # ou "ldaps://...:636"
+# ldap_use_ssl = false
+# Modo 1 — bind direto (template do DN):
+# ldap_user_dn_template = "uid={username},ou=people,dc=empresa,dc=com"
+# Modo 2 — busca + bind (AD típico; conta de serviço opcional):
+# ldap_base_dn = "dc=empresa,dc=com"
+# ldap_user_filter = "(|(uid={username})(sAMAccountName={username}))"
+# ldap_bind_dn = "cn=svc-creditops,ou=service,dc=empresa,dc=com"
+# ldap_timeout_seconds = 5
+
+# ── v2: API REST de consumo (somente leitura) ───────────────────────────────
+# Tokens de serviço: python -m app.cli create-token --name "motor-x"
+[api]
+api_enabled = true
+
+# ── v2: webhooks de publicação (version.published / version.effective) ──────
+# Assinatura HMAC-SHA256 no header X-CreditOps-Signature quando houver
+# segredo (env CREDITOPS_WEBHOOK_SECRET). Fila persistente com retry.
+[webhooks]
+webhook_urls = ""                # endpoints separados por vírgula; vazio = desligado
+# webhook_timeout_seconds = 10
+# webhook_max_attempts = 10
+
+# ── v2: módulo de IA plugável (o core opera 100% sem ele) ───────────────────
+# Credencial APENAS via env (CREDITOPS_AI_API_KEY) ou arquivo protegido
+# (CREDITOPS_AI_KEY_FILE). Com ai_provider = "none" é garantido por
+# construção que nenhum conteúdo de política sai do ambiente.
+[ai]
+ai_provider = "none"             # none | openai | anthropic | gemini | internal
+# ai_model = ""                  # ex.: "claude-haiku-4-5-20251001"
+# ai_base_url = ""               # gateways corporativos / OpenAI-compatible (Ollama/vLLM)
+# ai_timeout_seconds = 30
+# ai_max_tokens = 1024
+# Features individuais (cada uma liga/desliga sem afetar as demais):
+# ai_summarize_diff = false      # rascunho do resumo de mudança a partir do diff
+# ai_suggest_tags = false        # sugestão de tags do catálogo
+# ai_draft_from_document = false # doc legado → Markdown no template
+# ai_qa_search = false           # perguntas sobre políticas (RAG local)

@@ -41,17 +41,19 @@ creditops/
 │   │   └── static/               # css/app.css, js/htmx.min.js (vendorizado), img/
 │   │
 │   ├── api/                      # rotas JSON (v2) — API de consumo somente leitura
-│   │   └── v1/
+│   │   ├── deps.py               # autenticação por token de serviço (Bearer)
+│   │   └── v1.py                 # catálogo, vigente por código, histórico, time travel
 │   │
 │   ├── auth/                     # sessões, hash de senha, dependências de RBAC
 │   │
 │   └── plugins/                  # ═ OPCIONAL: pontos de extensão ═
 │       ├── base.py               # interfaces (NotifierPlugin, AuthPlugin, AIProvider)
 │       ├── registry.py           # carrega plugins conforme settings.toml
-│       ├── ai/                   # service.py, tasks/ (summarize, classify, draft, qa)
+│       ├── ai/                   # service.py (fachada), tasks.py (summarize, tags, draft, qa)
 │       │   └── providers/        # none.py, openai.py, anthropic.py, gemini.py, internal.py
 │       ├── notify/               # email_smtp.py
-│       └── auth_ldap/            # (v2)
+│       ├── webhook.py            # (v2) entrega assinada de eventos de publicação
+│       └── auth_ldap/            # (v2) SSO LDAP/AD (bind direto ou busca+bind)
 │
 ├── migrations/                   # Alembic (versões numeradas do esquema)
 │   ├── env.py

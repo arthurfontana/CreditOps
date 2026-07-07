@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Ciência — {{ policy.code }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/policies">Catálogo</a> → <a href="/policies/{{ policy.id }}">{{ policy.code }}</a> → Ciência</div>
+<h1>Trilha de leitura — {{ policy.code }}</h1>
+{% if policy.current_version %}
+<p class="help">Ciência registrada sobre a versão vigente
+  (v{{ policy.current_version.version_number }}). Ao entrar uma nova versão em vigor,
+  a leitura volta a ser pendente para todos.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Leram ({{ report.receipts|length }})</h2>
+    <table>
+      <tr><th>Usuário</th><th>Data</th></tr>
+      {% for r in report.receipts %}
+      <tr><td>{{ r.user.display_name if r.user }}</td><td>{{ r.acknowledged_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
+      {% else %}
+      <tr><td colspan="2" class="help">Ninguém declarou ciência ainda.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Pendentes ({{ report.pending_users|length }})</h2>
+    <ul>
+      {% for u in report.pending_users %}
+      <li>{{ u.display_name }} · {{ role_label(u.role) }}</li>
+      {% else %}<li class="help">Todos os usuários ativos leram.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% else %}
+<p class="help">A política não tem versão vigente.</p>
+{% endif %}
+{% endblock %}

@@ -19,6 +19,10 @@
     <a href="/change-requests">Demandas</a>
     <a href="/releases">Releases</a>
     <a href="/dashboard">Dashboard</a>
+    <a href="/ask">Perguntas</a>
+    <a href="/recertification">Recertificação</a>
+    <a href="/impact">Impacto</a>
+    <a href="/reading">Leitura</a>
     {% if user.role == 'approver' %}<a href="/delegations">Delegações</a>{% endif %}
     {% if user.role == 'admin' or user.is_auditor %}<a href="/audit">Auditoria</a>{% endif %}
     {% if user.role == 'admin' %}<a href="/admin/users">Administração</a>{% endif %}

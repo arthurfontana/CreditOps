@@ -26,8 +26,9 @@
     {% for area in areas %}<option value="{{ area.id }}" {% if target and target.area_id == area.id %}selected{% endif %}>{{ area.name }}</option>{% endfor %}
   </select>
   {% if not target %}
-  <label for="password">Senha inicial (mín. 8 caracteres — o usuário deverá trocá-la)</label>
-  <input type="password" id="password" name="password" required minlength="8">
+  <label><input type="checkbox" name="sso" value="true" style="width:auto"> Usuário SSO (sem senha local — autentica no diretório corporativo; requer plugin LDAP ativo)</label>
+  <label for="password">Senha inicial (mín. 8 caracteres — o usuário deverá trocá-la; ignorada se SSO)</label>
+  <input type="password" id="password" name="password" minlength="8">
   {% endif %}
   <label><input type="checkbox" name="is_auditor" value="true" {% if target and target.is_auditor %}checked{% endif %} style="width:auto"> Acesso de auditor (consulta da trilha)</label>
   {% if target %}

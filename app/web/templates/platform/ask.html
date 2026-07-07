@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Perguntas — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Perguntas sobre políticas</h1>
+{% if ai_enabled %}
+<p class="help">A resposta é gerada por IA a partir EXCLUSIVAMENTE dos trechos de
+políticas vigentes recuperados pela busca, citando código e versão. Confira sempre
+a fonte — a resposta é apoio, não é a política.</p>
+{% else %}
+<p class="help">IA desligada: a página funciona como busca melhorada — os trechos
+mais relevantes das políticas vigentes são listados abaixo.</p>
+{% endif %}
+
+<form class="card" method="get" action="/ask">
+  <label for="q">Pergunta</label>
+  <input type="search" id="q" name="q" value="{{ q }}"
+         placeholder="Ex.: qual o score mínimo para cartão PF?">
+  <div class="actions"><button type="submit">Perguntar</button></div>
+</form>
+
+{% if answer %}
+<div class="card">
+  <h2>Resposta (IA — confira as fontes)</h2>
+  <div class="md-body">{{ answer|markdown|safe }}</div>
+</div>
+{% endif %}
+
+{% if q %}
+<div class="card">
+  <h2>Fontes ({{ sources|length }})</h2>
+  {% if sources %}
+  <ul>
+    {% for s in sources %}
+    <li>
+      <a href="/policies/{{ s.policy_id }}">{{ s.code }} v{{ s.version_number }}</a>
+      — {{ s.title }}
+      <div class="help">{{ s.snippet|safe }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="help">Nenhuma política vigente corresponde à pergunta. Tente outros termos.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Comparar políticas — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Comparação entre políticas</h1>
+<p class="help">Compara o conteúdo VIGENTE de duas políticas diferentes
+(para diff entre versões da mesma política, use o histórico dela).</p>
+
+<form class="card" method="get" action="/compare-policies">
+  <div class="grid2">
+    <div>
+      <label for="policy_a">Política A</label>
+      <select id="policy_a" name="policy_a">
+        <option value="">— escolha —</option>
+        {% for p in candidates %}
+        <option value="{{ p.id }}" {% if a and a.id == p.id %}selected{% endif %}>{{ p.code }} — {{ p.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="policy_b">Política B</label>
+      <select id="policy_b" name="policy_b">
+        <option value="">— escolha —</option>
+        {% for p in candidates %}
+        <option value="{{ p.id }}" {% if b and b.id == p.id %}selected{% endif %}>{{ p.code }} — {{ p.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="actions"><button type="submit">Comparar</button></div>
+</form>
+
+{% if rows %}
+<div class="card" style="overflow-x:auto">
+  <h2>{{ a.code }} (v{{ a.current_version.version_number }})
+      × {{ b.code }} (v{{ b.current_version.version_number }})
+      · <span style="color: var(--green)">+{{ stats.added }}</span>
+      / <span style="color: var(--red)">−{{ stats.removed }}</span></h2>
+  <table class="diff">
+    {% for row in rows %}
+    <tr class="{{ row.kind }}">
+      <td class="lineno">{{ row.left_no or '' }}</td>
+      <td class="left" style="width:50%">{{ row.left }}</td>
+      <td class="lineno">{{ row.right_no or '' }}</td>
+      <td class="right" style="width:50%">{{ row.right }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% elif a and b %}
+<div class="card"><p class="help">Escolha duas políticas DIFERENTES, ambas com versão vigente.</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Rascunho por IA — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Rascunho a partir de documento legado (IA)</h1>
+{% if not enabled %}
+<div class="banner">Feature desligada ou IA não configurada
+  (settings: ai_provider + ai_draft_from_document). O caminho manual continua:
+  <a href="/policies/import">importador de legado</a>.</div>
+{% endif %}
+<p class="help">Cole o texto do documento antigo; a IA o reorganiza no template Markdown
+do tipo escolhido, preservando regras e valores. Você revisa e cola no editor —
+nada é gravado automaticamente.</p>
+
+<form class="card stack" method="post" action="/ai/draft">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label for="policy_type">Tipo de política (define o template)</label>
+  <select id="policy_type" name="policy_type">
+    <option value="limite">limite</option>
+    <option value="concessao">concessão</option>
+    <option value="renegociacao">renegociação</option>
+    <option value="cobranca">cobrança</option>
+    <option value="score">score</option>
+    <option value="alcada">alçada</option>
+    <option value="outro" selected>outro</option>
+  </select>
+  <label for="raw_text">Documento original</label>
+  <textarea id="raw_text" name="raw_text" rows="14" required
+            placeholder="Cole aqui o texto do documento legado…"></textarea>
+  <div class="actions"><button type="submit" {% if not enabled %}disabled{% endif %}>Gerar rascunho</button></div>
+</form>
+
+{% if suggestion %}
+<div class="card">
+  <h2>Rascunho sugerido (revise e cole no editor da versão)</h2>
+  <textarea rows="20" readonly onclick="this.select()">{{ suggestion }}</textarea>
+</div>
+{% endif %}
+{% endblock %}

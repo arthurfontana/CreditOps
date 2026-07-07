@@ -57,7 +57,8 @@ def create_user(
     email: str = Form(...),
     display_name: str = Form(...),
     role: str = Form(...),
-    password: str = Form(...),
+    password: str = Form(""),
+    sso: bool = Form(False),
     area_id: str = Form(""),
     is_auditor: bool = Form(False),
     db: Session = Depends(get_db),
@@ -68,7 +69,10 @@ def create_user(
         user_service.create_user(
             db, user,
             username=username, email=email, display_name=display_name,
-            role=role, password=password, area_id=area_id or None,
+            role=role,
+            # usuário SSO (v2): sem senha local — autentica no diretório
+            password=None if sso else password,
+            area_id=area_id or None,
             is_auditor=is_auditor,
         )
     except DomainError as exc:
