@@ -116,7 +116,8 @@
 
 <div class="card">
   <h2>Conteúdo</h2>
-  <div class="md-body">{{ version.body_md|markdown|safe }}</div>
+  {% if version.body_html %}<div class="rich-body">{{ version.body_html|safe }}</div>
+  {% else %}<div class="md-body">{{ version.body_md|markdown|safe }}</div>{% endif %}
 </div>
 
 {% if metrics or (publication and not historical) %}

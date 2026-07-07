@@ -29,7 +29,11 @@ class Attachment(Base):
     __tablename__ = "attachment"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
-    version_id: Mapped[str] = mapped_column(String(36), ForeignKey("policy_version.id"))
+    # anexo pertence a UMA das âncoras: versão de política OU demanda
+    version_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("policy_version.id"))
+    change_request_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("change_request.id")
+    )
     filename: Mapped[str] = mapped_column(String(255))
     stored_path: Mapped[str] = mapped_column(String(500))
     sha256: Mapped[str] = mapped_column(String(64))

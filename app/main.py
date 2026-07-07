@@ -29,6 +29,7 @@ from app.web.routes import (
     audit,
     auth,
     change_requests,
+    cinemas,
     dashboard,
     delegations,
     exports,
@@ -148,6 +149,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(releases.router)
     app.include_router(change_requests.router)
+    app.include_router(cinemas.router)
     app.include_router(dashboard.router)
     app.include_router(delegations.router)
     app.include_router(platform.router)
@@ -202,9 +204,14 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
+        # style-src permite inline: as cores das matrizes de cineminha e a
+        # formatação de cor do editor WYSIWYG usam style="" (o HTML do editor é
+        # sanitizado no servidor — nh3 restringe style a cor/alinhamento).
+        # Scripts continuam estritos ('self', sem inline).
         response.headers.setdefault(
             "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'",
+            "default-src 'self'; img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self'",
         )
         return response
 

@@ -33,12 +33,15 @@ def get_version(db: Session, version_id: str) -> PolicyVersion:
     return version
 
 
-def content_hash(body_md: str, structured_fields: str | None) -> str:
+def content_hash(body_md: str, structured_fields: str | None, body_html: str = "") -> str:
     normalized = body_md + "\n" + json.dumps(
         json.loads(structured_fields) if structured_fields else None,
         sort_keys=True,
         ensure_ascii=False,
     )
+    # corpo WYSIWYG entra no hash quando presente (sem alterar hashes históricos)
+    if body_html:
+        normalized += "\n" + body_html
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
@@ -49,8 +52,11 @@ def update_draft(
     *,
     body_md: str,
     structured_fields: str | None = None,
+    body_html: str | None = None,
 ) -> PolicyVersion:
     """Edita o conteúdo — só autor da versão (ou admin) e só em rascunho."""
+    from app.services import richtext
+
     version = get_version(db, version_id)
     authz.ensure_role(actor, Role.AUTHOR, Role.ADMIN)
     authz.ensure_area_scope(actor, version.policy.area_id, action="editar")
@@ -60,6 +66,8 @@ def update_draft(
         raise ValidationFailed("apenas rascunhos podem ser editados (versões são imutáveis)")
     version.body_md = body_md
     version.structured_fields = structured_fields
+    if body_html is not None:
+        version.body_html = richtext.sanitize_html(body_html)
     db.flush()
     # auditoria sem o corpo inteiro: grava apenas o hash do novo conteúdo
     audit_service.record(
@@ -68,7 +76,7 @@ def update_draft(
         "version.updated",
         "policy_version",
         version.id,
-        {"content_sha256": content_hash(body_md, structured_fields)},
+        {"content_sha256": content_hash(body_md, structured_fields, version.body_html)},
     )
     return version
 
@@ -139,6 +147,7 @@ def create_revision(db: Session, actor: User, policy_id: str) -> PolicyVersion:
         version_number=max_version_number(db, policy.id) + 1,
         status=VersionStatus.DRAFT,
         body_md=base.body_md,
+        body_html=base.body_html or "",
         structured_fields=base.structured_fields,
         based_on_version_id=base.id,
         created_by=actor.id,
@@ -162,7 +171,9 @@ def create_revision(db: Session, actor: User, policy_id: str) -> PolicyVersion:
 
 def freeze(version: PolicyVersion) -> None:
     """Congela o conteúdo: calcula o hash. Chamado pelo workflow ao entrar em aprovação."""
-    version.content_hash = content_hash(version.body_md, version.structured_fields)
+    version.content_hash = content_hash(
+        version.body_md, version.structured_fields, version.body_html or ""
+    )
 
 
 def version_at(db: Session, policy_id: str, d: date) -> PolicyVersion | None:

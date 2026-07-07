@@ -81,9 +81,12 @@ def edit_version_form(
     attachments = list(
         db.scalars(select(Attachment).where(Attachment.version_id == version.id))
     )
+    # rascunhos antigos (Markdown) entram no editor já convertidos para HTML
+    initial_html = version.body_html or render_markdown(version.body_md)
     return render(
         request, "version/edit.html", user,
         version=version, policy=policy, attachments=attachments, msg=msg,
+        initial_html=initial_html,
         field_values=structured_fields.load(version.structured_fields),
         field_defs=structured_fields.defs_for(policy.policy_type),
         indicators=indicator_service.list_active(db),
@@ -96,7 +99,8 @@ def edit_version_form(
 async def save_version(
     request: Request,
     version_id: str,
-    body_md: str = Form(""),
+    body_md: str | None = Form(None),
+    body_html: str | None = Form(None),
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.AUTHOR, Role.ADMIN)),
     _csrf: None = Depends(csrf_protect),
@@ -109,7 +113,11 @@ async def save_version(
             {key[3:]: value for key, value in form.items() if key.startswith("sf_")},
         )
         version_service.update_draft(
-            db, user, version_id, body_md=body_md, structured_fields=fields_json
+            db, user, version_id,
+            # form do editor WYSIWYG não envia body_md — preserva o legado
+            body_md=version.body_md if body_md is None else body_md,
+            structured_fields=fields_json,
+            body_html=body_html,
         )
     except DomainError as exc:
         if request.headers.get("HX-Request"):

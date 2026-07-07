@@ -25,7 +25,7 @@ from app.models import (
     Role,
     User,
 )
-from app.services import audit_service, authz
+from app.services import audit_service, authz, richtext
 from app.services.errors import NotFound, PermissionDenied, ValidationFailed
 
 
@@ -46,7 +46,8 @@ def create(
     actor: User,
     *,
     title: str,
-    description_md: str,
+    description_md: str = "",
+    description_html: str = "",
     area_id: str,
     policy_id: str | None = None,
     priority: str = ChangeRequestPriority.MEDIUM,
@@ -68,6 +69,7 @@ def create(
         code=_next_code(db),
         title=title.strip(),
         description_md=description_md,
+        description_html=richtext.sanitize_html(description_html),
         requested_by=actor.id,
         area_id=area_id,
         policy_id=policy_id or None,
@@ -87,6 +89,68 @@ def get(db: Session, change_request_id: str) -> ChangeRequest:
     if change_request is None:
         raise NotFound("demanda não encontrada")
     return change_request
+
+
+def ensure_can_edit(db: Session, actor: User, change_request: ChangeRequest) -> None:
+    """Edição da demanda: solicitante, autores/aprovadores e admin, enquanto aberta."""
+    authz.ensure_active(actor)
+    if change_request.status not in (
+        ChangeRequestStatus.OPEN,
+        ChangeRequestStatus.IN_PROGRESS,
+    ):
+        raise ValidationFailed("demanda encerrada não pode ser alterada")
+    role = Role(actor.role)
+    if role in (Role.ADMIN, Role.AUTHOR, Role.APPROVER):
+        return
+    if change_request.requested_by == actor.id:
+        return
+    raise PermissionDenied("apenas o solicitante ou autores podem editar a demanda")
+
+
+def update(
+    db: Session,
+    actor: User,
+    change_request_id: str,
+    *,
+    title: str,
+    description_html: str,
+    priority: str,
+) -> ChangeRequest:
+    """Edita a demanda em aberto — cada alteração fica no registro de auditoria.
+
+    O detalhe da demanda exibe esse histórico ("registro de alterações"),
+    substituindo a tabela manual que existia nos documentos Word.
+    """
+    change_request = get(db, change_request_id)
+    ensure_can_edit(db, actor, change_request)
+    if not title.strip():
+        raise ValidationFailed("título da demanda é obrigatório")
+    if priority not in [p.value for p in ChangeRequestPriority]:
+        raise ValidationFailed(f"prioridade inválida: {priority}")
+    change_request.title = title.strip()
+    change_request.description_html = richtext.sanitize_html(description_html)
+    change_request.priority = priority
+    db.flush()
+    audit_service.record(
+        db, actor.id, "change_request.updated", "change_request", change_request.id,
+        {"code": change_request.code, "title": change_request.title, "priority": priority},
+    )
+    return change_request
+
+
+def update_history(db: Session, change_request_id: str) -> list:
+    """Registro de alterações da demanda a partir da trilha de auditoria."""
+    from app.models import AuditLog
+
+    stmt = (
+        select(AuditLog)
+        .where(
+            AuditLog.entity_type == "change_request",
+            AuditLog.entity_id == change_request_id,
+        )
+        .order_by(AuditLog.created_at.desc())
+    )
+    return list(db.scalars(stmt))
 
 
 @dataclass

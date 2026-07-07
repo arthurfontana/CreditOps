@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Novo cineminha — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/cinemas">Biblioteca</a> → Novo</div>
+<h1>Novo cineminha</h1>
+
+<div class="card">
+  <form class="stack" method="post" action="/cinemas">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="name">Nome</label>
+    <input type="text" id="name" name="name" required placeholder="ex.: Cortes Digital G7 — Sem Risco">
+    <label for="description">Descrição (opcional)</label>
+    <input type="text" id="description" name="description" placeholder="ex.: matriz de ofertas do canal Digital para o grupo G7">
+    <label for="cinema_type">Tipo</label>
+    <select id="cinema_type" name="cinema_type">
+      <option value="offer">Oferta — casela com valor (ex.: 8 / 5 / 3 / 0)</option>
+      <option value="eligibility">Elegibilidade — casela liga/desliga (✓/✗)</option>
+    </select>
+    <label for="row_variable_id">Variável das linhas</label>
+    <select id="row_variable_id" name="row_variable_id" required>
+      {% for v in variables %}<option value="{{ v.id }}">{{ v.label }} ({{ v.name }})</option>{% endfor %}
+    </select>
+    <label for="col_variable_id">Variável das colunas</label>
+    <select id="col_variable_id" name="col_variable_id" required>
+      {% for v in variables %}<option value="{{ v.id }}">{{ v.label }} ({{ v.name }})</option>{% endfor %}
+    </select>
+    <div class="actions"><button type="submit">Criar</button></div>
+    <p class="help">Sem variável cadastrada? <a href="/variables">Crie no catálogo</a> primeiro — o domínio padrão
+      (ex.: R01…R20, R99) vem de lá.</p>
+  </form>
+</div>
+{% endblock %}

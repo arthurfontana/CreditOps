@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}{{ cinema.name }} — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/cinemas">Biblioteca</a> → {{ cinema.name }}</div>
+<h1>{{ cinema.name }}
+  <span class="badge draft">{{ 'Elegibilidade' if cinema.cinema_type == 'eligibility' else 'Oferta' }}</span>
+  {% if not cinema.is_active %}<span class="badge archived">Inativo</span>{% endif %}
+</h1>
+<p class="help">
+  Eixos: {{ cinema.row_variable.label }} × {{ cinema.col_variable.label }}
+  {% if cinema.description %} · {{ cinema.description }}{% endif %}
+</p>
+
+<div class="card">
+  <h2>Versão vigente {% if cinema.current_version %}(v{{ cinema.current_version.version_number }}){% endif %}</h2>
+  {% if current_view %}
+  {{ macros.cinema_matrix(current_view, cinema.row_variable.label, cinema.col_variable.label) }}
+  {% else %}
+  <p class="help">Ainda sem versão vigente — carregue a matriz de produção (AS IS) ou aguarde a primeira
+    demanda entrar em vigor.</p>
+  {% endif %}
+  {% if user.role in ('author', 'approver', 'admin') %}
+  <div class="actions">
+    <a class="btn btn-secondary" href="/cinemas/{{ cinema.id }}/baseline">✏️ Carga manual (AS IS)</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Trilha de versões</h2>
+  {% if history %}
+  <table>
+    <tr><th>Versão</th><th>Origem</th><th>Demanda</th><th>Política</th><th>Data</th><th>Autor</th></tr>
+    {% for v in history %}
+    <tr>
+      <td><strong>v{{ v.version_number }}</strong>{% if cinema.current_version_id == v.id %} <span class="badge effective">vigente</span>{% endif %}</td>
+      <td>{{ 'Promoção (vigência)' if v.origin == 'promotion' else 'Carga manual' }}</td>
+      <td>{% if v.change_request %}<a href="/change-requests/{{ v.change_request.id }}">{{ v.change_request.code }}</a>{% endif %}</td>
+      <td>{% if v.policy_version %}<a href="/versions/{{ v.policy_version.id }}">{{ v.policy_version.policy.code }} v{{ v.policy_version.version_number }}</a>{% endif %}</td>
+      <td>{{ v.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ v.creator.display_name if v.creator else 'sistema' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma versão registrada.</p>
+  {% endif %}
+</div>
+{% endblock %}

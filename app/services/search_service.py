@@ -11,8 +11,14 @@ from dataclasses import dataclass
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.models import Policy, PolicyLifecycle, User
+from app.models import Policy, PolicyLifecycle, PolicyVersion, User
 from app.services import authz
+from app.services.richtext import body_text
+
+
+def _index_body(version: PolicyVersion) -> str:
+    """Corpo indexável: texto extraído do HTML (WYSIWYG) ou o Markdown legado."""
+    return body_text(version.body_html, version.body_md)
 
 
 def reindex_policy(db: Session, policy_id: str) -> None:
@@ -36,7 +42,7 @@ def reindex_policy(db: Session, policy_id: str) -> None:
             "pid": policy.id,
             "code": policy.code,
             "title": policy.title,
-            "body": policy.current_version.body_md,
+            "body": _index_body(policy.current_version),
         },
     )
 

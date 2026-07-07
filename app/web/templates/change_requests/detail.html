@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as macros %}
 {% block title %}{{ cr.code }} — {{ app_name }}{% endblock %}
 {% block content %}
 <div class="breadcrumbs"><a href="/change-requests">Demandas</a> → {{ cr.code }}</div>
@@ -15,13 +16,99 @@
   {% if lead_time is not none %} · <strong>lead time: {{ lead_time }} dia(s)</strong>{% endif %}
 </p>
 
-{% if cr.description_md %}
-<div class="card"><h2>Motivação</h2><div class="md-body">{{ cr.description_md|markdown|safe }}</div></div>
+<div class="actions">
+  {% if can_edit %}
+  <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}/edit">✏️ Editar demanda</a>
+  {% endif %}
+  <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}/export.docx">⬇ Exportar Word</a>
+  <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}/print" target="_blank">🖨 Visão de impressão / PDF</a>
+</div>
+
+{% if cr.description_html or cr.description_md %}
+<div class="card"><h2>Descrição</h2>{{ macros.rich_body(cr.description_html, cr.description_md) }}</div>
 {% endif %}
 
 {% if cr.resolution %}
 <div class="card"><h2>Resolução</h2><p>{{ cr.resolution }}</p></div>
 {% endif %}
+
+<div class="card">
+  <h2>Cineminhas (matrizes de política)</h2>
+  {% if instances %}
+  {% for item in instances %}
+  <h3>{{ item.instance.cinema.name }}
+    <span class="badge {{ 'effective' if item.instance.status == 'promoted' else 'draft' }}">
+      {{ 'Promovido à biblioteca' if item.instance.status == 'promoted' else 'Em edição' }}</span>
+  </h3>
+  <p class="help">
+    {{ 'Elegibilidade' if item.instance.cinema.cinema_type == 'eligibility' else 'Oferta' }} ·
+    {% if item.instance.source_version %}origem: v{{ item.instance.source_version.version_number }} da biblioteca{% else %}matriz nova (biblioteca sem versão vigente){% endif %}
+    {% if item.instance.promoted_version %} · promovida como v{{ item.instance.promoted_version.version_number }}{% endif %}
+  </p>
+  {% if item.stale %}
+  <div class="stale-warn">⚠ Base defasada: a biblioteca já está na
+    v{{ item.instance.cinema.current_version.version_number }} — esta instância partiu da
+    {% if item.instance.source_version %}v{{ item.instance.source_version.version_number }}{% else %}matriz vazia{% endif %}.
+    {% if can_edit %}
+    <form class="inline" method="post" action="/cinema-instances/{{ item.instance.id }}/rebase">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-sm btn-secondary">↺ Re-basear na versão vigente</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+  {{ macros.cinema_matrix(item.view, item.instance.cinema.row_variable.label, item.instance.cinema.col_variable.label) }}
+  {% if item.instance.notes %}<p class="help">Observações: {{ item.instance.notes }}</p>{% endif %}
+  {% if can_edit and item.instance.status == 'draft' %}
+  <div class="actions">
+    <a class="btn btn-secondary btn-sm" href="/cinema-instances/{{ item.instance.id }}">✏️ Editar caselas</a>
+    <form class="inline" method="post" action="/cinema-instances/{{ item.instance.id }}/remove"
+          onsubmit="return confirm('Remover este cineminha da demanda?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-sm btn-danger">Remover</button>
+    </form>
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  <p class="help">Nenhum cineminha nesta demanda.</p>
+  {% endif %}
+  {% if can_edit %}
+  <form class="filters" method="post" action="/change-requests/{{ cr.id }}/cinemas">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select name="cinema_id" required>
+      <option value="">— escolher da biblioteca —</option>
+      {% for c in library %}
+      <option value="{{ c.id }}">{{ c.name }} ({{ 'Elegibilidade' if c.cinema_type == 'eligibility' else 'Oferta' }}{% if c.current_version %}, v{{ c.current_version.version_number }}{% else %}, sem versão{% endif %})</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary">＋ Puxar da biblioteca</button>
+    <a class="btn btn-secondary" href="/cinemas">Abrir biblioteca</a>
+  </form>
+  <p class="help">A cópia é sua para editar — a biblioteca só é atualizada quando a política desta demanda entrar em vigor.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Anexos</h2>
+  {% if attachments %}
+  <ul>
+    {% for a in attachments %}
+    <li><a href="/attachments/{{ a.id }}">{{ a.filename }}</a> ({{ (a.size_bytes / 1024)|round(1) }} KB)</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="help">Nenhum anexo.</p>
+  {% endif %}
+  {% if can_edit %}
+  <form method="post" action="/change-requests/{{ cr.id }}/attachments" enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="file">Adicionar anexo (pdf, docx, xlsx, png, jpg, csv, txt — máx. 20MB)</label>
+    <input type="file" id="file" name="file" required>
+    <div class="actions"><button type="submit" class="btn-secondary">Enviar anexo</button></div>
+  </form>
+  {% endif %}
+</div>
 
 <div class="card">
   <h2>Política afetada</h2>
@@ -46,6 +133,22 @@
   <p class="help">Nenhuma versão vinculada ainda — vincule pelo rascunho da política (Editar → Demanda).</p>
   {% endif %}
 </div>
+
+{% if history %}
+<div class="card">
+  <h2>Registro de alterações</h2>
+  <table>
+    <tr><th>Data</th><th>Ação</th><th>Autor</th></tr>
+    {% for h in history %}
+    <tr>
+      <td>{{ h.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ audit_labels.get(h.action, h.action) }}</td>
+      <td>{{ h.actor.display_name if h.actor else 'sistema' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
 
 {% if cr.status in ('open', 'in_progress') %}
 <div class="actions">

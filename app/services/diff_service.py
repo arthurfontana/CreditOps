@@ -9,13 +9,20 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher, unified_diff
 
 from app.models import PolicyVersion
+from app.services.richtext import body_text
+
+
+def _body_lines(version: PolicyVersion, keepends: bool = False) -> list[str]:
+    """Linhas canônicas do corpo: texto extraído do HTML (WYSIWYG) ou o Markdown."""
+    html = getattr(version, "body_html", "")
+    return body_text(html, version.body_md).splitlines(keepends)
 
 
 def unified(a: PolicyVersion, b: PolicyVersion) -> str:
     return "".join(
         unified_diff(
-            a.body_md.splitlines(keepends=True),
-            b.body_md.splitlines(keepends=True),
+            _body_lines(a, keepends=True),
+            _body_lines(b, keepends=True),
             fromfile=f"v{a.version_number}",
             tofile=f"v{b.version_number}",
         )
@@ -34,8 +41,8 @@ class Row:
 
 
 def side_by_side(a: PolicyVersion, b: PolicyVersion) -> list[Row]:
-    left_lines = a.body_md.splitlines()
-    right_lines = b.body_md.splitlines()
+    left_lines = _body_lines(a)
+    right_lines = _body_lines(b)
     matcher = SequenceMatcher(None, left_lines, right_lines, autojunk=False)
     rows: list[Row] = []
     for op, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -104,9 +111,7 @@ def field_diff(a: PolicyVersion, b: PolicyVersion) -> list[FieldChange]:
 
 def stats(a: PolicyVersion, b: PolicyVersion) -> dict[str, int]:
     added = removed = 0
-    matcher = SequenceMatcher(
-        None, a.body_md.splitlines(), b.body_md.splitlines(), autojunk=False
-    )
+    matcher = SequenceMatcher(None, _body_lines(a), _body_lines(b), autojunk=False)
     for op, i1, i2, j1, j2 in matcher.get_opcodes():
         if op in ("delete", "replace"):
             removed += i2 - i1

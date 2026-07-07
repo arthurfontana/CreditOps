@@ -31,6 +31,7 @@ class ChangeRequest(Base):
         String(36), ForeignKey("policy.id")
     )  # null = demanda de política nova
     priority: Mapped[str] = mapped_column(String(20), default=ChangeRequestPriority.MEDIUM)
+    description_html: Mapped[str] = mapped_column(Text, default="")  # WYSIWYG (sanitizado)
     status: Mapped[str] = mapped_column(String(20), default=ChangeRequestStatus.OPEN)
     resolution: Mapped[str | None] = mapped_column(Text)  # justificativa de conclusão/rejeição
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

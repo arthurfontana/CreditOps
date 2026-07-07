@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Variáveis de decisão — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/cinemas">Biblioteca</a> → Variáveis</div>
+<h1>Catálogo de variáveis de decisão</h1>
+<p class="help">Dimensões disponíveis para os eixos dos cineminhas, com domínio padrão ordenado
+  (ex.: FAIXA_SCORE = R01…R20, R99).</p>
+
+<div class="card">
+  {% if variables %}
+  <table>
+    <tr><th>Nome</th><th>Rótulo</th><th>Domínio padrão</th><th>Ordinal</th><th></th></tr>
+    {% for v in variables %}
+    <tr {% if not v.is_active %}style="opacity:.55"{% endif %}>
+      <td><strong>{{ v.name }}</strong>{% if not v.is_active %} <span class="badge archived">inativa</span>{% endif %}</td>
+      <td>{{ v.label }}</td>
+      <td class="help">{{ v.domain_list|join(', ') }}</td>
+      <td>{{ 'sim' if v.is_ordinal else 'não' }}</td>
+      <td>{% if user.role in ('author', 'approver', 'admin') %}
+        <a class="btn btn-secondary btn-sm" href="/variables/{{ v.id }}/edit">editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="help">Nenhuma variável cadastrada.</p>
+  {% endif %}
+</div>
+
+{% if user.role in ('author', 'approver', 'admin') %}
+<div class="card">
+  <h2>Nova variável</h2>
+  <form class="stack" method="post" action="/variables">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="name">Nome (técnico)</label>
+    <input type="text" id="name" name="name" required placeholder="ex.: FAIXA_SCORE">
+    <label for="label">Rótulo</label>
+    <input type="text" id="label" name="label" placeholder="ex.: Faixa de Score">
+    <label for="domain">Domínio padrão (valores separados por vírgula ou linha, na ordem)</label>
+    <textarea id="domain" name="domain" required
+              placeholder="R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R11, R12, R13, R14, R15, R16, R17, R18, R19, R20, R99"></textarea>
+    <label><input type="checkbox" name="is_ordinal" value="1" checked style="width:auto"> Ordinal (a ordem dos valores tem significado)</label>
+    <div class="actions"><button type="submit">Criar variável</button></div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

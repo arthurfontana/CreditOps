@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ cr.code }} — {{ app_name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="/static/css/quill.snow.css">
+<script src="/static/js/quill.min.js" defer></script>
+<script src="/static/js/editor.js" defer></script>
+{% endblock %}
+{% block content %}
+<div class="breadcrumbs"><a href="/change-requests">Demandas</a> → <a href="/change-requests/{{ cr.id }}">{{ cr.code }}</a> → Editar</div>
+<h1>Editando {{ cr.code }}</h1>
+
+<div class="card">
+  <form class="stack" method="post" action="/change-requests/{{ cr.id }}/edit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="title">Título</label>
+    <input type="text" id="title" name="title" value="{{ cr.title }}" required>
+    <label>Descrição</label>
+    <input type="hidden" name="description_html" id="description_html" value="{{ initial_html }}">
+    <div class="rich-editor editor-tall" data-input="#description_html"
+         data-placeholder="Contexto e objetivo, escopo, regra solicitada, critérios de aceite…"></div>
+    <label for="priority">Prioridade</label>
+    <select id="priority" name="priority">
+      {% for value, label in priorities.items() %}
+      <option value="{{ value }}" {% if value == cr.priority %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <div class="actions">
+      <button type="submit">Salvar</button>
+      <a class="btn btn-secondary" href="/change-requests/{{ cr.id }}">Cancelar</a>
+    </div>
+    <p class="help">Cada edição fica no registro de alterações da demanda (trilha de auditoria).</p>
+  </form>
+</div>
+{% endblock %}

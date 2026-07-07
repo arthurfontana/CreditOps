@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Nova demanda — {{ app_name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="/static/css/quill.snow.css">
+<script src="/static/js/quill.min.js" defer></script>
+<script src="/static/js/editor.js" defer></script>
+{% endblock %}
 {% block content %}
 <div class="breadcrumbs"><a href="/change-requests">Demandas</a> → Nova</div>
 <h1>Nova demanda de mudança</h1>
@@ -9,10 +14,11 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label for="title">Título</label>
     <input type="text" id="title" name="title" required
-           placeholder="ex.: Rever score mínimo do cartão PF após deterioração do FPD60">
-    <label for="description_md">Motivação (Markdown)</label>
-    <textarea id="description_md" name="description_md"
-              placeholder="Contexto, dados que motivam a mudança, urgência…"></textarea>
+           placeholder="ex.: Ajuste cineminha matriz de política do canal Digital">
+    <label>Descrição</label>
+    <input type="hidden" name="description_html" id="description_html">
+    <div class="rich-editor" data-input="#description_html"
+         data-placeholder="Contexto e objetivo, escopo, regra solicitada, critérios de aceite… Cole do Word que a formatação vem junto."></div>
     <label for="area_id">Área</label>
     <select id="area_id" name="area_id" required>
       {% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
@@ -31,6 +37,7 @@
       {% endfor %}
     </select>
     <div class="actions"><button type="submit">Registrar demanda</button></div>
+    <p class="help">Depois de registrada você pode editar a descrição, anexar arquivos e adicionar cineminhas da biblioteca.</p>
   </form>
 </div>
 {% endblock %}
