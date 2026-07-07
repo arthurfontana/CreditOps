@@ -4,7 +4,7 @@ Esta pasta contém a sequência de prompts para implementar a aplicação usando
 
 ## Regras de uso (leia antes de começar)
 
-1. **Execute os prompts na ordem** (01 → 10). Cada um assume que o anterior foi concluído e commitado.
+1. **Execute os prompts na ordem** (01 → 12). Cada um assume que o anterior foi concluído e commitado.
 2. **Sempre anexe/inclua no contexto os arquivos da wiki citados** no cabeçalho de cada prompt. Eles são a fonte de verdade — o modelo não deve inventar requisitos.
 3. **Um prompt = uma sessão = um commit** (ou mais commits pequenos). Não misture etapas.
 4. Ao final de cada etapa, **rode os testes** (`pytest`) antes de seguir. Se falharem, cole o erro no mesmo chat e peça correção antes de avançar.
@@ -24,8 +24,9 @@ Esta pasta contém a sequência de prompts para implementar a aplicação usando
 | 07 | [07-auditoria-e-historico.md](07-auditoria-e-historico.md) | Trilha append-only, linha do tempo, time travel, exportação/dossiê | 09, 07 |
 | 08 | [08-busca-e-ux.md](08-busca-e-ux.md) | Busca FTS5, home por perfil, polimento de UX | 02 |
 | 09 | [09-testes-e-operacao.md](09-testes-e-operacao.md) | Suíte de testes dos invariantes, backup/restore, seed, runbook | 12, 09 |
-| 10 | [10-ia-plugavel.md](10-ia-plugavel.md) | (v2, opcional) Módulo de IA: contrato, adapters, features de sugestão | 08 |
+| 10 | [10-ia-plugavel.md](10-ia-plugavel.md) | ✅ (implementado na v2 — ver prompt 12) Módulo de IA: contrato, adapters, features de sugestão | 08 |
 | 11 | [11-governanca-v1.md](11-governanca-v1.md) | ✅ (implementado) v1 completa: notificações, áreas, hash chain, multinível, delegação, releases, campos estruturados, demandas, indicadores/impacto, implementação, dashboard, importador, PDF | 03, 05, 06, 11, 16 |
+| 12 | [12-plataforma-v2.md](12-plataforma-v2.md) | ✅ (implementado) v2 completa: API de consumo com tokens, SSO LDAP, IA plugável + RAG, recertificação, webhooks, trilha de leitura, comparação entre políticas, grafo de referências/impacto, publicação-experimento | 03, 04, 05, 08, 11 |
 
 > As referências "04, 10" etc. são os arquivos `docs/wiki/NN-*.md` correspondentes.
 

@@ -68,6 +68,28 @@ def _notify(event_name: str):
     return handler
 
 
+def _webhook(event_name: str):
+    """Enfileira entregas de webhook do evento e tenta enviar imediatamente.
+
+    Entrega falha fica na fila — a tarefa periódica faz o retry (v2).
+    """
+
+    def handler(payload: dict[str, Any]) -> None:
+        from app.db import SessionLocal
+        from app.services import webhook_service
+
+        db = SessionLocal()
+        try:
+            queued = webhook_service.enqueue_for_event(db, event_name, payload)
+            if queued:
+                webhook_service.process_queue(db)
+            db.commit()
+        finally:
+            db.close()
+
+    return handler
+
+
 def register() -> None:
     global _registered
     if _registered:
@@ -77,3 +99,5 @@ def register() -> None:
         events.subscribe(name, _log_event(name))
         events.subscribe(name, _notify(name))
     events.subscribe("version.effective", _reindex_on_effective)
+    for name in ("version.published", "version.effective"):
+        events.subscribe(name, _webhook(name))

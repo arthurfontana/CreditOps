@@ -81,7 +81,11 @@ Durações assumem 1–2 desenvolvedores (ou execução assistida por IA com os 
 
 ---
 
-## v2 — "Plataforma da empresa"
+## v2 — "Plataforma da empresa" — ✅ implementada
+
+> Código na `main`: ver [prompt 12](../../prompts/12-plataforma-v2.md) para o
+> mapeamento entrega → módulos. O **gate de saída** (abaixo) é organizacional
+> e continua valendo antes de iniciar o enterprise.
 
 | Prioridade | Feature | Depende de |
 |---|---|---|

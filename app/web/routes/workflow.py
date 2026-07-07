@@ -165,6 +165,9 @@ def publish(
     version_id: str,
     effective_from: str = Form(...),
     release_id: str = Form(""),
+    rollout_scope: str = Form("full"),
+    pilot_description: str = Form(""),
+    pilot_ends_at: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(require_role(Role.APPROVER)),
     _csrf: None = Depends(csrf_protect),
@@ -173,9 +176,19 @@ def publish(
         effective = date.fromisoformat(effective_from)
     except ValueError:
         return _back(version_id, "Data+de+vig%C3%AAncia+inv%C3%A1lida")
+    pilot_end = None
+    if rollout_scope == "pilot" and pilot_ends_at:
+        try:
+            pilot_end = date.fromisoformat(pilot_ends_at)
+        except ValueError:
+            return _back(version_id, "Prazo+do+piloto+inv%C3%A1lido")
     try:
         version = workflow_service.publish(
-            db, user, version_id, effective, release_id=release_id or None
+            db, user, version_id, effective,
+            release_id=release_id or None,
+            rollout_scope=rollout_scope,
+            pilot_description=pilot_description or None,
+            pilot_ends_at=pilot_end,
         )
     except DomainError as exc:
         return _back(version_id, str(exc))

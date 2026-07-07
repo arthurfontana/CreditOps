@@ -4,10 +4,11 @@
 
 ## Estado do projeto
 
-🚀 **v1 implementada** ("Governança para valer" — ver [Roadmap](docs/wiki/11-roadmap.md)), sobre o MVP "Fonte de verdade":
+🚀 **v2 implementada** ("Plataforma da empresa" — ver [Roadmap](docs/wiki/11-roadmap.md)), sobre a v1 e o MVP:
 
 - **MVP**: catálogo, versões imutáveis, workflow completo de aprovação, publicação com vigência, rollback, trilha de auditoria append-only, busca FTS5, time travel, exportação/dossiê, backup/restore e suíte de testes de invariantes.
 - **v1**: notificações por e-mail (plugin SMTP com fila e retry), permissões por área, hash chain na auditoria (`scripts/verify_audit.py`), aprovação multinível por tipo de política, delegação de aprovação, releases (pacotes de publicação), campos estruturados por tipo + diff de campos, demanda de mudança com lead time ponta a ponta, catálogo de indicadores + hipótese × impacto observado (janelas 30/60/90d com cobrança pendente), referência de implementação (motor de decisão), dashboard de governança, importador de legado em lote e exportação PDF (plugin sem dependência externa).
+- **v2**: API REST de consumo somente leitura com tokens de serviço (`/api/v1`), SSO corporativo via plugin LDAP/AD (com fallback de senha local), módulo de IA plugável (OpenAI/Anthropic/Gemini/interno via httpx — resumo de diff, sugestão de tags, rascunho de legado; toda saída é sugestão auditada que um humano confirma), perguntas sobre políticas com RAG local (FTS5 + provider; sem IA vira busca melhorada), webhooks de publicação com fila/retry e assinatura HMAC, recertificação periódica (`review_due_at` + relatório), trilha de leitura obrigatória ("ciência da operação"), comparação entre políticas, grafo de referências (`usa`/`depende_de`/`substitui`, inclusive artefatos como scores e motores) com análise de impacto transitiva e publicação-experimento (piloto com escopo, prazo e cobrança de decisão no dashboard).
 
 ## Quickstart
 
@@ -39,7 +40,8 @@ Operação (backup, restore, TLS, upgrade): [docs/runbook.md](docs/runbook.md).
 | Modelo de dados | [Modelo de Dados](docs/wiki/05-modelo-de-dados.md) |
 | Fluxo de aprovação | [Workflow de Aprovação](docs/wiki/06-workflow-de-aprovacao.md) |
 | Operar o sistema | [Runbook](docs/runbook.md) |
-| Próximas fases (v1, v2, enterprise) | [Roadmap](docs/wiki/11-roadmap.md) · [Prompts de execução](prompts/README.md) |
+| Consumir a API / IA / SSO (v2) | [Runbook — seções 8–11](docs/runbook.md) · [IA Modular](docs/wiki/08-ia-modular.md) |
+| Próximas fases (enterprise) | [Roadmap](docs/wiki/11-roadmap.md) · [Prompts de execução](prompts/README.md) |
 
 ## Resumo em 30 segundos
 

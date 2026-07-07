@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.auth.deps import current_user
 from app.db import get_db
 from app.models import User
-from app.services import dashboard_service, impact_service
+from app.services import dashboard_service, impact_service, workflow_service
 from app.web.templating import render
 
 router = APIRouter()
@@ -22,4 +24,8 @@ def dashboard(
 ):
     overview = dashboard_service.overview(db, user)
     pending = impact_service.pending_observations(db, limit=20)
-    return render(request, "dashboard.html", user, o=overview, pending=pending)
+    pilots = workflow_service.active_pilots(db)
+    return render(
+        request, "dashboard.html", user,
+        o=overview, pending=pending, pilots=pilots, today=date.today(),
+    )

@@ -79,6 +79,20 @@
     <textarea id="expected_impact" name="expected_impact">{{ version.expected_impact or '' }}</textarea>
     <div class="actions"><button type="submit">Salvar</button></div>
   </form>
+  <div class="actions">
+    <form class="inline" hx-post="/ai/versions/{{ version.id }}/summarize-diff"
+          hx-target="#ai-suggestion" hx-swap="innerHTML">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-secondary btn-sm">Sugerir resumo (IA)</button>
+    </form>
+    <form class="inline" hx-post="/ai/versions/{{ version.id }}/suggest-tags"
+          hx-target="#ai-suggestion" hx-swap="innerHTML">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-secondary btn-sm">Sugerir tags (IA)</button>
+    </form>
+    <a class="btn btn-secondary btn-sm" href="/ai/draft">Rascunho de legado (IA)</a>
+  </div>
+  <div id="ai-suggestion"></div>
 </div>
 {% endif %}
 

@@ -50,6 +50,26 @@
 </div>
 
 <div class="card">
+  <h2>Pilotos em vigor (publicações-experimento)</h2>
+  {% if pilots %}
+  <table>
+    <tr><th>Política</th><th>Versão</th><th>Escopo</th><th>Prazo</th><th></th></tr>
+    {% for p in pilots %}
+    <tr>
+      <td>{{ p.version.policy.code }}</td>
+      <td><a href="/versions/{{ p.version.id }}">v{{ p.version.version_number }}</a></td>
+      <td class="help">{{ p.pilot_description }}</td>
+      <td>{{ p.pilot_ends_at.strftime('%d/%m/%Y') if p.pilot_ends_at }}</td>
+      <td>{% if p.pilot_ends_at and p.pilot_ends_at <= today %}<span class="badge rejected">prazo vencido — decidir</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="help">Piloto vencido exige decisão: promover a produção, ajustar ou encerrar —
+  sempre pelo fluxo normal de aprovação.</p>
+  {% else %}<p class="help">Nenhum piloto em vigor.</p>{% endif %}
+</div>
+
+<div class="card">
   <h2>Cobrança pendente — impacto observado</h2>
   {% if pending %}
   <table>

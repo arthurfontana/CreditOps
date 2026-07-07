@@ -1,5 +1,10 @@
 # 8. IA Modular e Opcional
 
+> ✅ **Implementado na v2**: `app/plugins/ai/` (fachada `AIService`, providers
+> none/openai/anthropic/gemini/internal via httpx, tasks em
+> `app/plugins/ai/tasks.py` com prompts de `prompts/runtime/`). Ver
+> [prompt 12](../../prompts/12-plataforma-v2.md).
+
 ## Princípio
 
 > **A IA é um acelerador plugável. O core funciona 100% sem ela, e nenhuma funcionalidade de governança depende dela.**

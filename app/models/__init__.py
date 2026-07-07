@@ -13,10 +13,14 @@ from app.models.enums import (
     IndicatorDirection,
     PolicyLifecycle,
     PolicyType,
+    ReferenceRelation,
+    ReferenceTargetType,
     Role,
+    RolloutScope,
     VersionStatus,
 )
 from app.models.org import Area, Product, Segment, User
+from app.models.platform import PolicyReference, ReadReceipt, ServiceToken, WebhookDelivery
 from app.models.policy import Policy, PolicyVersion, Tag, policy_product, policy_segment, policy_tag
 from app.models.workflow import (
     Approval,
@@ -65,4 +69,11 @@ __all__ = [
     "Publication",
     "Release",
     "StatusTransition",
+    "ReferenceRelation",
+    "ReferenceTargetType",
+    "RolloutScope",
+    "PolicyReference",
+    "ReadReceipt",
+    "ServiceToken",
+    "WebhookDelivery",
 ]

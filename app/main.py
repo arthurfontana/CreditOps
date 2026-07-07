@@ -25,6 +25,7 @@ from app.services.errors import (
 from app.web.csrf import CSRFError
 from app.web.routes import (
     admin,
+    ai,
     audit,
     auth,
     change_requests,
@@ -32,6 +33,7 @@ from app.web.routes import (
     delegations,
     exports,
     home,
+    platform,
     policies,
     releases,
     versions,
@@ -43,6 +45,7 @@ logger = logging.getLogger("creditops")
 
 EFFECTIVENESS_CHECK_SECONDS = 600  # 10 min
 NOTIFICATION_RETRY_SECONDS = 300  # 5 min
+WEBHOOK_RETRY_SECONDS = 300  # 5 min
 
 
 async def _effectiveness_loop() -> None:
@@ -81,6 +84,25 @@ async def _notification_retry_loop() -> None:
             logger.exception("falha no retry de notificações")
 
 
+async def _webhook_retry_loop() -> None:
+    """Retry da fila de webhooks (entregas que falharam ficam na fila)."""
+    from app.services import webhook_service
+
+    while True:
+        await asyncio.sleep(WEBHOOK_RETRY_SECONDS)
+        try:
+            db = SessionLocal()
+            try:
+                delivered = webhook_service.process_queue(db)
+                if delivered:
+                    db.commit()
+                    logger.info("webhooks reenviados: %d", delivered)
+            finally:
+                db.close()
+        except Exception:  # noqa: BLE001
+            logger.exception("falha no retry de webhooks")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -89,6 +111,8 @@ async def lifespan(app: FastAPI):
     tasks = [asyncio.create_task(_effectiveness_loop())]
     if settings.notify_email:
         tasks.append(asyncio.create_task(_notification_retry_loop()))
+    if settings.webhook_url_list:
+        tasks.append(asyncio.create_task(_webhook_retry_loop()))
     yield
     for task in tasks:
         task.cancel()
@@ -126,6 +150,12 @@ def create_app() -> FastAPI:
     app.include_router(change_requests.router)
     app.include_router(dashboard.router)
     app.include_router(delegations.router)
+    app.include_router(platform.router)
+    app.include_router(ai.router)
+    if settings.api_enabled:
+        from app.api import v1 as api_v1
+
+        app.include_router(api_v1.router)
 
     @app.exception_handler(AuthRedirect)
     async def _auth_redirect(request: Request, exc: AuthRedirect):
